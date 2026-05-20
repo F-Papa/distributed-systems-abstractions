@@ -1,22 +1,23 @@
-#include "fair_loss_link.h"
+#include "stubborn_link.h"
 #include <stdio.h>
 #include <stdlib.h>
 
-void process_msg(FllDeliver *e) {
+void process_msg(SblDeliver *e) {
   printf("Received from %d: %s\n", e->sender, e->msg);
 }
 
 int main(int argc, char **argv) {
   int id = atoi(argv[1]);
 
-  struct FairLossLink *fll = fll_init(id);
-  fll_set_callback(fll, &process_msg);
+  struct StubbornLink *sbl = sbl_init(id, 2);
+  sbl_set_callback(sbl, &process_msg);
 
-  FllSend *e = calloc(1, sizeof(FllSend));
+  SblSend *e = calloc(1, sizeof(SblSend));
   e->recipient = id == 1 ? 2 : 1;
   snprintf(e->msg, MAX_MSG_LEN, "Hello from %d", id);
-  fll_send(fll, e);
+  sbl_send(sbl, e);
 
-  struct timeval to = {.tv_sec = 3, .tv_usec = 0};
-  fll_consume(fll, NULL);
+  struct timeval to = {.tv_sec = 10, .tv_usec = 0};
+  sbl_consume(sbl, &to);
+  sbl_free(sbl);
 }
