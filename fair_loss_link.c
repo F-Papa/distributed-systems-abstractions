@@ -116,7 +116,6 @@ void fll_consume(struct FairLossLink *fll, struct timeval *timeout) {
       strcpy(e->msg, buf + id_len + DELIM_LEN);
       e->sender = atoi(id);
       fll->callback(e);
-      free(e);
     }
   }
 }
