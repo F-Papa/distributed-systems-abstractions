@@ -11,7 +11,7 @@ static int _len_deliveries = 0;
 void retrieve_deliveries() {}
 void store_deliveries() {}
 
-void lpl_callback_wrapper(SblDeliver *deliver) {
+void lpl_callback_wrapper(struct StubbornLink *sbl, SblDeliver *deliver) {
   char id[10];
   int id_len = strcspn(deliver->msg, ",");
   strncpy(id, deliver->msg, id_len);
