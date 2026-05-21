@@ -1,18 +1,27 @@
 #include "stubborn_link.h"
+#include "list.h"
+#include <stdio.h>
+#include <unistd.h>
+
+list_t *_stubborn_links = NULL;
 
 struct StubbornLink *sbl_init(int id, int retransmission_period) {
   struct FairLossLink *fll = fll_init(id);
   if (fll == NULL)
     return NULL;
 
-  struct StubbornLink *sbl = calloc(1, sizeof(struct StubbornLink));
-  if (sbl == NULL) {
-    free(fll);
-    return NULL;
+  if (_stubborn_links == NULL) {
+    _stubborn_links = list_init();
+    if (_stubborn_links == NULL) {
+      fll_free(fll);
+      return NULL;
+    }
   }
 
-  sbl->retransmission_period = retransmission_period;
+  struct StubbornLink *sbl = calloc(1, sizeof(struct StubbornLink));
   sbl->fair_loss_link = fll;
+  sbl->retransmission_period = retransmission_period;
+  list_add(_stubborn_links, sbl);
   return sbl;
 }
 
@@ -67,5 +76,12 @@ void sbl_set_callback(struct StubbornLink *sbl, void (*cb)(SblDeliver *e)) {
 
 void sbl_free(struct StubbornLink *sbl) {
   fll_free(sbl->fair_loss_link);
-  free(sbl);
+  int idx = list_index(_stubborn_links, sbl);
+  if (idx >= 0) {
+    list_remove(_stubborn_links, idx);
+  }
+
+  if (_stubborn_links->count == 0) {
+    list_free(_stubborn_links);
+  }
 }
