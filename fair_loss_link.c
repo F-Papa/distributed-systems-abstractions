@@ -1,7 +1,10 @@
 #include "fair_loss_link.h"
+#include "list.h"
 #include <sys/select.h>
 
 #define DELIM_LEN 1
+
+list_t *_links = NULL;
 
 void get_port(int id, char *port) {
   int port_number = 3000 + id;
@@ -41,6 +44,13 @@ struct FairLossLink *fll_init(int id) {
 
   freeaddrinfo(resp);
 
+  if (_links == NULL) {
+    _links = list_init();
+    if (_links == NULL) {
+      return NULL;
+    }
+  }
+
   struct FairLossLink *fll = calloc(1, sizeof(struct FairLossLink));
   if (fll == NULL)
     return NULL;
@@ -49,6 +59,8 @@ struct FairLossLink *fll_init(int id) {
   fll->id = id;
   FD_ZERO(&fll->reads);
   FD_SET(sock, &fll->reads);
+
+  list_add(_links, fll);
   return fll;
 }
 
@@ -124,5 +136,11 @@ void fll_free(struct FairLossLink *fll) {
   if (fll->socket >= 0) {
     close(fll->socket);
   }
-  free(fll);
+  int idx = list_index(_links, fll);
+  if (idx >= 0) {
+    list_remove(_links, idx);
+  }
+  if (_links->count == 0) {
+    list_free(_links);
+  }
 }
