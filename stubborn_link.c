@@ -3,12 +3,34 @@
 #include <stdio.h>
 #include <unistd.h>
 
-list_t *_stubborn_links = NULL;
+static list_t *_stubborn_links = NULL;
+
+void sbl_wrapper(struct FairLossLink *fll, FllDeliver *e) {
+  if (_stubborn_links == NULL || _stubborn_links->count == 0) {
+    return;
+  }
+
+  lnode_t *node = _stubborn_links->start;
+  struct StubbornLink *sbl;
+  for (node = _stubborn_links->start; node != NULL; node = node->next) {
+    sbl = node->element;
+    if (sbl->fair_loss_link == fll)
+      break;
+  }
+
+  if (node == NULL) {
+    return;
+  }
+
+  sbl->cb(sbl, e);
+}
 
 struct StubbornLink *sbl_init(int id, int retransmission_period) {
   struct FairLossLink *fll = fll_init(id);
   if (fll == NULL)
     return NULL;
+
+  fll_set_callback(fll, &sbl_wrapper);
 
   if (_stubborn_links == NULL) {
     _stubborn_links = list_init();
@@ -70,8 +92,9 @@ void sbl_consume(struct StubbornLink *sbl, struct timeval *timeout) {
   }
 }
 
-void sbl_set_callback(struct StubbornLink *sbl, void (*cb)(SblDeliver *e)) {
-  fll_set_callback(sbl->fair_loss_link, cb);
+void sbl_set_callback(struct StubbornLink *sbl,
+                      void (*cb)(struct StubbornLink *, SblDeliver *)) {
+  sbl->cb = cb;
 }
 
 void sbl_free(struct StubbornLink *sbl) {

@@ -99,7 +99,8 @@ int fll_send(struct FairLossLink *fll, FllSend *e) {
   return 0;
 }
 
-void fll_set_callback(struct FairLossLink *fll, void (*cb)(FllDeliver *e)) {
+void fll_set_callback(struct FairLossLink *fll,
+                      void (*cb)(struct FairLossLink *fll, FllDeliver *e)) {
   fll->callback = cb;
 }
 
@@ -127,7 +128,7 @@ void fll_consume(struct FairLossLink *fll, struct timeval *timeout) {
 
       strcpy(e->msg, buf + id_len + DELIM_LEN);
       e->sender = atoi(id);
-      fll->callback(e);
+      fll->callback(fll, e);
     }
   }
 }

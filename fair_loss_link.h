@@ -31,12 +31,13 @@ struct FairLossLink {
   int id;
   int socket;
   fd_set reads;
-  void (*callback)(FllDeliver *);
+  void (*callback)(struct FairLossLink *, FllDeliver *);
   // void (*callback[MAX_CALLBACKS])(FllDeliver *);
 };
 
 struct FairLossLink *fll_init(int id);
 int fll_send(struct FairLossLink *fll, FllSend *e);
-void fll_set_callback(struct FairLossLink *fll, void (*cb)(FllDeliver *e));
+void fll_set_callback(struct FairLossLink *fll,
+                      void (*cb)(struct FairLossLink *fll, FllDeliver *e));
 void fll_consume(struct FairLossLink *fll, struct timeval *timeout);
 void fll_free(struct FairLossLink *fll);
