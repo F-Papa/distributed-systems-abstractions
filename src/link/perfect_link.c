@@ -1,6 +1,6 @@
-#include "perfect_link.h"
-#include "list.h"
-#include "logging.h"
+#include "link/perfect_link.h"
+#include "utils/list.h"
+#include "utils/logging.h"
 #include <stddef.h>
 #include <stdio.h>
 #include <stdlib.h>

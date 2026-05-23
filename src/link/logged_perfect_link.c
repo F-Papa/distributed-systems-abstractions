@@ -1,4 +1,4 @@
-#include "logged_perfect_link.h"
+#include "link/logged_perfect_link.h"
 #include <stdlib.h>
 
 #define DELIM_LEN 1

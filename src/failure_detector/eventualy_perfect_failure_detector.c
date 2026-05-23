@@ -1,6 +1,5 @@
-#include "perfect_failure_detector.h"
-#include "list.h"
-#include "logging.h"
+#include "failure_detector/eventually_perfect_failure_detector.h"
+#include "utils/list.h"
 #include "string.h"
 #include <bits/types/struct_timeval.h>
 #include <stdlib.h>
@@ -10,14 +9,20 @@
 #define DELIM_LEN 1
 #define HEALTHCHECK_INTERVAL_SEC 4
 
-struct PerfectFailureDetector {
+typedef struct {
+  int peer_rank;
+} Crash;
+
+struct EventuallyPerfectFailureDetector {
   struct PerfectLink *perfect_link;
-  void (*on_crash_cb)(void *, Crash *);
-  void *ctx;
+  void (*on_suspect_cb)(void *, Suspect *);
+  void *on_suspect_ctx;
+  void (*on_restore_cb)(void *, Restore *);
+  void *on_restore_ctx;
   int max_rank;
   int local_rank;
   list_t *alive_peers;
-  list_t *faulty_peers;
+  list_t *suspected_peers;
 };
 
 static int try_parse_message(char *msg, char *expected_header, char *body) {
@@ -34,20 +39,19 @@ static int send_im_alive(struct PerfectLink *pl, int recipient) {
 }
 
 static int send_heartbeat(struct PerfectLink *pl, int recipient) {
-  PlSend heartbeat = {.base.msg = "HB", .base.recipient = recipient};
-  return pl_send(pl, &heartbeat);
+  PlSend im_alive = {.base.msg = "HB", .base.recipient = recipient};
+  return pl_send(pl, &im_alive);
 }
 
 static void pfd_callback(void *ctx, PlDeliver *e) {
-  struct PerfectFailureDetector *pfd = ctx;
+  Epfd *pfd = ctx;
   char msg[MAX_MSG_LEN];
   int *sender = calloc(1, sizeof(int));
   *sender = e->base.sender;
   if (try_parse_message(e->base.msg, "HB", msg) == 0) {
-    debug("HB from %d\n", *sender);
-    send_im_alive(pfd->perfect_link, e->base.sender);
+    send_im_alive(pfd->perfect_link, *sender);
+
   } else if (try_parse_message(e->base.msg, "IA", msg) == 0) {
-    debug("IA from %d\n", *sender);
     list_add(pfd->alive_peers, sender);
   } else {
     printf("UNKNOW MESSAGE FROM %d: %s\n", *sender, e->base.msg);
@@ -55,8 +59,7 @@ static void pfd_callback(void *ctx, PlDeliver *e) {
   }
 }
 
-void pfd_start(struct PerfectFailureDetector *pfd,
-               struct timeval *external_timeout) {
+void epfd_start(Epfd *pfd, struct timeval *external_timeout) {
   struct timeval healthcheck_deadline, external_deadline;
   struct timeval healtheck_timeout = {.tv_sec = HEALTHCHECK_INTERVAL_SEC,
                                       .tv_usec = 0};
@@ -69,7 +72,7 @@ void pfd_start(struct PerfectFailureDetector *pfd,
     timeradd(&external_deadline, external_timeout, &external_deadline);
   }
 
-  for (int peer_rank = 1; peer_rank <= pfd->max_rank; peer_rank++) {
+  for (int peer_rank = 0; peer_rank <= pfd->max_rank; peer_rank++) {
     if (peer_rank == pfd->local_rank)
       continue;
 
@@ -86,13 +89,11 @@ void pfd_start(struct PerfectFailureDetector *pfd,
       next_timeout = external_timeout;
     }
 
-    debug("Waiting for next timer\n");
     pl_consume(pfd->perfect_link, next_timeout);
     struct timeval now;
     gettimeofday(&now, NULL);
 
     if (timercmp(&now, &healthcheck_deadline, >=)) {
-      debug("Timer done\n");
       for (size_t peer_rank = 1; peer_rank <= pfd->max_rank; peer_rank++) {
         if (peer_rank == pfd->local_rank)
           continue;
@@ -105,8 +106,8 @@ void pfd_start(struct PerfectFailureDetector *pfd,
             break;
           }
         }
-        for (int i = 0; i < pfd->faulty_peers->count; i++) {
-          int *j = list_get(pfd->faulty_peers, i);
+        for (int i = 0; i < pfd->suspected_peers->count; i++) {
+          int *j = list_get(pfd->suspected_peers, i);
           if (*j == peer_rank) {
             is_faulty = 1;
             break;
@@ -115,10 +116,22 @@ void pfd_start(struct PerfectFailureDetector *pfd,
         if (!is_alive && !is_faulty) {
           int *peer_rank_cpy = calloc(1, sizeof(int));
           *peer_rank_cpy = peer_rank;
-          list_add(pfd->faulty_peers, peer_rank_cpy);
+          list_add(pfd->suspected_peers, peer_rank_cpy);
 
-          Crash crash_indication = {.peer_id = peer_rank};
-          pfd->on_crash_cb(pfd->ctx, &crash_indication);
+          Suspect suspect_indication = {.peer_rank = peer_rank};
+          pfd->on_suspect_cb(pfd->on_suspect_ctx, &suspect_indication);
+
+        } else if (is_alive && is_faulty) {
+          for (int i = 0; i < pfd->suspected_peers->count; i++) {
+            int *j = list_get(pfd->suspected_peers, i);
+            if (*j == peer_rank) {
+              list_remove(pfd->suspected_peers, i);
+              break;
+            }
+          }
+
+          Restore restore_indication = {.peer_rank = peer_rank};
+          pfd->on_restore_cb(pfd->on_restore_ctx, &restore_indication);
         }
         send_heartbeat(pfd->perfect_link, peer_rank);
       }
@@ -126,18 +139,13 @@ void pfd_start(struct PerfectFailureDetector *pfd,
       while (pfd->alive_peers->count > 0) {
         list_remove(pfd->alive_peers, 0);
       }
-      healtheck_timeout.tv_sec = HEALTHCHECK_INTERVAL_SEC;
-      healtheck_timeout.tv_usec = 0;
-      gettimeofday(&healthcheck_deadline, NULL);
-      timeradd(&healthcheck_deadline, &healtheck_timeout,
-               &healthcheck_deadline);
     }
 
     done = external_timeout && timercmp(&now, &external_deadline, >=);
   }
 }
 
-Pfd *pfd_init(int local_rank, int max_rank, int retransmission_period) {
+Epfd *epfd_init(int local_rank, int max_rank, int retransmission_period) {
   struct PerfectLink *pl = pl_init(local_rank, retransmission_period);
   if (pl == NULL) {
     return NULL;
@@ -149,47 +157,53 @@ Pfd *pfd_init(int local_rank, int max_rank, int retransmission_period) {
     return NULL;
   }
 
-  list_t *faulty_peers = list_init();
-  if (faulty_peers == NULL) {
+  list_t *suspected_peers = list_init();
+  if (suspected_peers == NULL) {
     pl_free(pl);
     list_free(alive_peers);
     return NULL;
   }
 
-  Pfd *pfd = calloc(1, sizeof(Pfd) + max_rank * sizeof(int));
-  if (pfd == NULL) {
+  Epfd *epfd = calloc(1, sizeof(Epfd) + max_rank * sizeof(int));
+  if (epfd == NULL) {
     pl_free(pl);
     list_free(alive_peers);
-    list_free(faulty_peers);
+    list_free(suspected_peers);
     return NULL;
   }
 
-  pl_set_callback(pl, &pfd_callback, pfd);
+  pl_set_callback(pl, &pfd_callback, epfd);
 
-  pfd->max_rank = max_rank;
-  pfd->local_rank = local_rank;
-  pfd->perfect_link = pl;
-  pfd->alive_peers = alive_peers;
-  pfd->faulty_peers = faulty_peers;
+  epfd->max_rank = max_rank;
+  epfd->local_rank = local_rank;
+  epfd->perfect_link = pl;
+  epfd->alive_peers = alive_peers;
+  epfd->suspected_peers = suspected_peers;
 
   for (int i = 1; i < max_rank; i++) {
     if (i == local_rank)
       continue;
     int *peer_rank = calloc(1, sizeof(int));
-    list_add(pfd->alive_peers, peer_rank);
+    list_add(epfd->alive_peers, peer_rank);
   }
-  return pfd;
+  return epfd;
 }
 
-void pfd_set_oncrash(struct PerfectFailureDetector *pfd,
-                     void (*cb)(void *ctx, Crash *e), void *ctx) {
-  pfd->on_crash_cb = cb;
-  pfd->ctx = ctx;
+void epfd_set_on_suspect(Epfd *epfd, void (*cb)(void *ctx, Suspect *e),
+                         void *ctx) {
+  epfd->on_suspect_cb = cb;
+  epfd->on_suspect_ctx = ctx;
 }
 
-void pfd_free(struct PerfectFailureDetector *pfd) {
-  pl_free(pfd->perfect_link);
-  list_free(pfd->alive_peers);
-  list_free(pfd->faulty_peers);
-  free(pfd);
+void epfd_set_on_restore(Epfd *epfd, void (*cb)(void *ctx, Restore *e),
+                         void *ctx) {
+  epfd->on_restore_cb = cb;
+  epfd->on_restore_ctx = ctx;
+}
+
+void epfd_free(Epfd *epfd) {
+  pl_free(epfd->perfect_link);
+  list_free(epfd->alive_peers);
+  list_free(epfd->suspected_peers);
+  free(epfd);
 }

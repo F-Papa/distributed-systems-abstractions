@@ -1,7 +1,7 @@
-#include "monarchical_leader_election.h"
-#include "list.h"
-#include "logging.h"
-#include "perfect_failure_detector.h"
+#include "leader_election/monarchical_leader_election.h"
+#include "utils/list.h"
+#include "utils/logging.h"
+#include "failure_detector/perfect_failure_detector.h"
 #include <bits/types/struct_timeval.h>
 #include <stdlib.h>
 

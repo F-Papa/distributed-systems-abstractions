@@ -1,5 +1,5 @@
-#include "list.h"
-#include "stubborn_link.h"
+#include "utils/list.h"
+#include "link/stubborn_link.h"
 
 typedef struct {
   SblSend base;

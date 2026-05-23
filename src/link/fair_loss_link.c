@@ -1,6 +1,6 @@
-#include "fair_loss_link.h"
-#include "list.h"
-#include "logging.h"
+#include "link/fair_loss_link.h"
+#include "utils/list.h"
+#include "utils/logging.h"
 #include <sys/select.h>
 
 #define DELIM_LEN 1

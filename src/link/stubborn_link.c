@@ -1,6 +1,6 @@
-#include "stubborn_link.h"
-#include "list.h"
-#include "logging.h"
+#include "link/stubborn_link.h"
+#include "utils/list.h"
+#include "utils/logging.h"
 #include <stdio.h>
 #include <unistd.h>
 
