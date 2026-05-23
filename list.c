@@ -10,7 +10,7 @@ void list_free(list_t *l) {
   if (l->count > 0) {
     lnode_t *node = l->start;
     lnode_t *next = node->next;
-    for (size_t i = 0; i < l->count; i++) {
+    for (size_t i = 0; i < l->count - 1; i++) {
       node = next;
       next = next->next;
       free(node);

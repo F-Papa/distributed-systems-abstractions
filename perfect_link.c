@@ -4,10 +4,18 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
+#include <sys/types.h>
 
 #define DELIM_LEN 1
 
 static list_t *_perfect_links = NULL;
+
+struct PerfectLink {
+  struct StubbornLink *stubborn_link;
+  int n_inbox;
+  void (*cb)(struct PerfectLink *, PlDeliver *);
+  list_t *inbox;
+};
 
 unsigned long djb2(const char *str) {
   unsigned long hash = 5381;
@@ -35,9 +43,11 @@ void pl_callback_wrapper(struct StubbornLink *sbl, SblDeliver *deliver) {
     return;
   }
 
-  unsigned long hash = djb2(deliver->msg);
-  for (size_t i = 0; i < pl->n_inbox; i++) {
-    if (pl->inbox[i] == hash) {
+  unsigned long *hash = calloc(1, sizeof(unsigned long));
+  *hash = djb2(deliver->msg);
+
+  for (size_t i = 0; i < pl->inbox->count; i++) {
+    if (*(unsigned long *)list_get(pl->inbox, i) == *hash) {
       return;
     }
   }
@@ -52,7 +62,7 @@ void pl_callback_wrapper(struct StubbornLink *sbl, SblDeliver *deliver) {
     deliver->msg[i] = deliver->msg[i + offset];
   }
 
-  pl->inbox[pl->n_inbox++] = hash;
+  list_add(pl->inbox, hash);
   PlDeliver pl_event = {.base = *deliver, .id = atol(id)};
   pl->cb(pl, &pl_event);
 }
@@ -71,14 +81,21 @@ struct PerfectLink *pl_init(int id, int retransmission_period) {
     }
   }
 
+  list_t *inbox = list_init();
+  if (inbox == NULL) {
+    sbl_free(sbl);
+    return NULL;
+  }
   struct PerfectLink *pl = calloc(1, sizeof(struct PerfectLink));
   if (pl == NULL) {
     sbl_free(sbl);
+    list_free(inbox);
     return NULL;
   }
 
   pl->n_inbox = 0;
   pl->stubborn_link = sbl;
+  pl->inbox = inbox;
   list_add(_perfect_links, pl);
   return pl;
 }
@@ -106,6 +123,8 @@ void pl_free(struct PerfectLink *pl) {
   if (idx >= 0) {
     list_remove(_perfect_links, idx);
   }
+
+  list_free(pl->inbox);
 
   if (_perfect_links->count == 0) {
     list_free(_perfect_links);

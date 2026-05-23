@@ -6,6 +6,13 @@
 
 list_t *_links = NULL;
 
+struct FairLossLink {
+  int id;
+  int socket;
+  fd_set reads;
+  void (*callback)(struct FairLossLink *, FllDeliver *);
+};
+
 void get_port(int id, char *port) {
   int port_number = 3000 + id;
   sprintf(port, "%d", port_number);

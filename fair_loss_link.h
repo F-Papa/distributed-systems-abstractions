@@ -13,31 +13,28 @@
 #include <unistd.h>
 
 #define MAX_MSG_LEN 1024
-#define MAX_CALLBACKS 10
-#define FLL_SEND 1
-#define FLL_DELIVER 1
 
-typedef struct {
+typedef struct fair_loss_link_send {
+
   int recipient;
   char msg[MAX_MSG_LEN];
 } FllSend;
 
-typedef struct {
+typedef struct fair_loss_link_deliver {
   int sender;
   char msg[MAX_MSG_LEN];
+
 } FllDeliver;
 
-struct FairLossLink {
-  int id;
-  int socket;
-  fd_set reads;
-  void (*callback)(struct FairLossLink *, FllDeliver *);
-  // void (*callback[MAX_CALLBACKS])(FllDeliver *);
-};
+struct FairLossLink;
 
 struct FairLossLink *fll_init(int id);
+
 int fll_send(struct FairLossLink *fll, FllSend *e);
+
 void fll_set_callback(struct FairLossLink *fll,
                       void (*cb)(struct FairLossLink *fll, FllDeliver *e));
+
 void fll_consume(struct FairLossLink *fll, struct timeval *timeout);
+
 void fll_free(struct FairLossLink *fll);

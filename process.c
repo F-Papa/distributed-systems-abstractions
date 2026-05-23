@@ -3,8 +3,7 @@
 #include <stdlib.h>
 
 void process_msg(struct PerfectLink *pl, PlDeliver *e) {
-  printf("[%d] Received from %d: %s\n", pl->n_inbox, e->base.sender,
-         e->base.msg);
+  printf("[%p] Received from %d: %s\n", pl, e->base.sender, e->base.msg);
 }
 
 int main(int argc, char **argv) {

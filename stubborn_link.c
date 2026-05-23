@@ -5,6 +5,13 @@
 
 static list_t *_stubborn_links = NULL;
 
+struct StubbornLink {
+  int retransmission_period;
+  struct FairLossLink *fair_loss_link;
+  void (*cb)(struct StubbornLink *, SblDeliver *);
+  list_t *outbox;
+};
+
 void sbl_wrapper(struct FairLossLink *fll, FllDeliver *e) {
   if (_stubborn_links == NULL || _stubborn_links->count == 0) {
     return;
@@ -32,6 +39,12 @@ struct StubbornLink *sbl_init(int id, int retransmission_period) {
 
   fll_set_callback(fll, &sbl_wrapper);
 
+  list_t *outbox = list_init();
+  if (outbox == NULL) {
+    fll_free(fll);
+    return NULL;
+  }
+
   if (_stubborn_links == NULL) {
     _stubborn_links = list_init();
     if (_stubborn_links == NULL) {
@@ -41,15 +54,22 @@ struct StubbornLink *sbl_init(int id, int retransmission_period) {
   }
 
   struct StubbornLink *sbl = calloc(1, sizeof(struct StubbornLink));
+  if (sbl == NULL) {
+    fll_free(fll);
+    list_free(outbox);
+    list_free(_stubborn_links);
+    return NULL;
+  }
+
   sbl->fair_loss_link = fll;
+  sbl->outbox = outbox;
   sbl->retransmission_period = retransmission_period;
   list_add(_stubborn_links, sbl);
   return sbl;
 }
 
 int sbl_send(struct StubbornLink *sbl, SblSend *e) {
-  int duplicate = 0;
-  sbl->outbox[sbl->n_outbox++] = *e;
+  list_add(sbl->outbox, e);
   return fll_send(sbl->fair_loss_link, e);
 }
 
@@ -79,8 +99,8 @@ void sbl_consume(struct StubbornLink *sbl, struct timeval *timeout) {
     struct timeval now;
     gettimeofday(&now, NULL);
     if (timercmp(&now, &retrans_deadline, >=)) {
-      for (size_t i = 0; i < sbl->n_outbox; i++) {
-        fll_send(sbl->fair_loss_link, &sbl->outbox[i]);
+      for (size_t i = 0; i < sbl->outbox->count; i++) {
+        fll_send(sbl->fair_loss_link, list_get(sbl->outbox, i));
       }
       retrans_timeout.tv_sec = sbl->retransmission_period;
       retrans_timeout.tv_usec = 0;
@@ -103,6 +123,9 @@ void sbl_free(struct StubbornLink *sbl) {
   if (idx >= 0) {
     list_remove(_stubborn_links, idx);
   }
+
+  list_free(sbl->outbox);
+  free(sbl);
 
   if (_stubborn_links->count == 0) {
     list_free(_stubborn_links);
