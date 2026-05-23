@@ -8,12 +8,11 @@
 
 #define DELIM_LEN 1
 
-static list_t *_perfect_links = NULL;
-
 struct PerfectLink {
   struct StubbornLink *stubborn_link;
   int n_inbox;
-  void (*cb)(struct PerfectLink *, PlDeliver *);
+  void (*cb)(void *, PlDeliver *);
+  void *ctx;
   list_t *inbox;
 };
 
@@ -25,26 +24,11 @@ unsigned long djb2(const char *str) {
   return hash;
 }
 
-void pl_callback_wrapper(struct StubbornLink *sbl, SblDeliver *deliver) {
-  if (_perfect_links == NULL || _perfect_links->count == 0) {
-    return;
-  }
-
-  lnode_t *node = _perfect_links->start;
-  struct PerfectLink *pl;
-  for (node = _perfect_links->start; node != NULL; node = node->next) {
-    pl = node->element;
-    if (pl->stubborn_link == sbl) {
-      break;
-    }
-  }
-
-  if (pl->stubborn_link != sbl) {
-    return;
-  }
+static void wrapper(void *ctx, SblDeliver *e) {
+  struct PerfectLink *pl = ctx;
 
   unsigned long *hash = calloc(1, sizeof(unsigned long));
-  *hash = djb2(deliver->msg);
+  *hash = djb2(e->msg);
 
   for (size_t i = 0; i < pl->inbox->count; i++) {
     if (*(unsigned long *)list_get(pl->inbox, i) == *hash) {
@@ -53,33 +37,24 @@ void pl_callback_wrapper(struct StubbornLink *sbl, SblDeliver *deliver) {
   }
 
   char id[10];
-  int id_len = strcspn(deliver->msg, ",");
-  strncpy(id, deliver->msg, id_len);
+  int id_len = strcspn(e->msg, ",");
+  strncpy(id, e->msg, id_len);
 
   int offset = id_len + DELIM_LEN;
 
-  for (size_t i = 0; i < strlen(deliver->msg) - DELIM_LEN; i++) {
-    deliver->msg[i] = deliver->msg[i + offset];
+  for (size_t i = 0; i < strlen(e->msg) - DELIM_LEN; i++) {
+    e->msg[i] = e->msg[i + offset];
   }
 
   list_add(pl->inbox, hash);
-  PlDeliver pl_event = {.base = *deliver, .id = atol(id)};
-  pl->cb(pl, &pl_event);
+  PlDeliver pl_event = {.base = *e, .id = atol(id)};
+  pl->cb(pl->ctx, &pl_event);
 }
 
 struct PerfectLink *pl_init(int id, int retransmission_period) {
   struct StubbornLink *sbl = sbl_init(id, retransmission_period);
   if (sbl == NULL)
     return NULL;
-
-  sbl_set_callback(sbl, pl_callback_wrapper);
-
-  if (_perfect_links == NULL) {
-    _perfect_links = list_init();
-    if (_perfect_links == NULL) {
-      return NULL;
-    }
-  }
 
   list_t *inbox = list_init();
   if (inbox == NULL) {
@@ -93,10 +68,11 @@ struct PerfectLink *pl_init(int id, int retransmission_period) {
     return NULL;
   }
 
+  sbl_set_callback(sbl, &wrapper, pl);
+
   pl->n_inbox = 0;
   pl->stubborn_link = sbl;
   pl->inbox = inbox;
-  list_add(_perfect_links, pl);
   return pl;
 }
 
@@ -112,21 +88,13 @@ void pl_consume(struct PerfectLink *pl, struct timeval *timeout) {
   return sbl_consume(pl->stubborn_link, timeout);
 }
 
-void pl_set_callback(struct PerfectLink *pl,
-                     void (*cb)(struct PerfectLink *, PlDeliver *)) {
+void pl_set_callback(struct PerfectLink *pl, void (*cb)(void *, PlDeliver *),
+                     void *ctx) {
   pl->cb = cb;
+  pl->ctx = ctx;
 }
 
 void pl_free(struct PerfectLink *pl) {
   sbl_free(pl->stubborn_link);
-  int idx = list_index(_perfect_links, pl);
-  if (idx >= 0) {
-    list_remove(_perfect_links, idx);
-  }
-
   list_free(pl->inbox);
-
-  if (_perfect_links->count == 0) {
-    list_free(_perfect_links);
-  }
 }

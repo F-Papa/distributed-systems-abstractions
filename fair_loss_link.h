@@ -33,7 +33,7 @@ struct FairLossLink *fll_init(int id);
 int fll_send(struct FairLossLink *fll, FllSend *e);
 
 void fll_set_callback(struct FairLossLink *fll,
-                      void (*cb)(struct FairLossLink *fll, FllDeliver *e));
+                      void (*cb)(void *ctx, FllDeliver *e), void *ctx);
 
 void fll_consume(struct FairLossLink *fll, struct timeval *timeout);
 

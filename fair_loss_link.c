@@ -10,7 +10,8 @@ struct FairLossLink {
   int id;
   int socket;
   fd_set reads;
-  void (*callback)(struct FairLossLink *, FllDeliver *);
+  void (*callback)(void *, FllDeliver *);
+  void *ctx;
 };
 
 void get_port(int id, char *port) {
@@ -107,8 +108,9 @@ int fll_send(struct FairLossLink *fll, FllSend *e) {
 }
 
 void fll_set_callback(struct FairLossLink *fll,
-                      void (*cb)(struct FairLossLink *fll, FllDeliver *e)) {
+                      void (*cb)(void *ctx, FllDeliver *e), void *ctx) {
   fll->callback = cb;
+  fll->ctx = ctx;
 }
 
 void fll_consume(struct FairLossLink *fll, struct timeval *timeout) {
@@ -135,7 +137,7 @@ void fll_consume(struct FairLossLink *fll, struct timeval *timeout) {
 
       strcpy(e->msg, buf + id_len + DELIM_LEN);
       e->sender = atoi(id);
-      fll->callback(fll, e);
+      fll->callback(fll->ctx, e);
     }
   }
 }

@@ -3,33 +3,17 @@
 #include <stdio.h>
 #include <unistd.h>
 
-static list_t *_stubborn_links = NULL;
-
 struct StubbornLink {
   int retransmission_period;
   struct FairLossLink *fair_loss_link;
-  void (*cb)(struct StubbornLink *, SblDeliver *);
+  void (*cb)(void *, SblDeliver *);
+  void *ctx;
   list_t *outbox;
 };
 
-void sbl_wrapper(struct FairLossLink *fll, FllDeliver *e) {
-  if (_stubborn_links == NULL || _stubborn_links->count == 0) {
-    return;
-  }
-
-  lnode_t *node = _stubborn_links->start;
-  struct StubbornLink *sbl;
-  for (node = _stubborn_links->start; node != NULL; node = node->next) {
-    sbl = node->element;
-    if (sbl->fair_loss_link == fll)
-      break;
-  }
-
-  if (node == NULL) {
-    return;
-  }
-
-  sbl->cb(sbl, e);
+static void wrapper(void *ctx, FllDeliver *e) {
+  struct StubbornLink *sbl = ctx;
+  sbl->cb(sbl->ctx, e);
 }
 
 struct StubbornLink *sbl_init(int id, int retransmission_period) {
@@ -37,34 +21,24 @@ struct StubbornLink *sbl_init(int id, int retransmission_period) {
   if (fll == NULL)
     return NULL;
 
-  fll_set_callback(fll, &sbl_wrapper);
-
   list_t *outbox = list_init();
   if (outbox == NULL) {
     fll_free(fll);
     return NULL;
   }
 
-  if (_stubborn_links == NULL) {
-    _stubborn_links = list_init();
-    if (_stubborn_links == NULL) {
-      fll_free(fll);
-      return NULL;
-    }
-  }
-
   struct StubbornLink *sbl = calloc(1, sizeof(struct StubbornLink));
   if (sbl == NULL) {
     fll_free(fll);
     list_free(outbox);
-    list_free(_stubborn_links);
     return NULL;
   }
+
+  fll_set_callback(fll, &wrapper, sbl);
 
   sbl->fair_loss_link = fll;
   sbl->outbox = outbox;
   sbl->retransmission_period = retransmission_period;
-  list_add(_stubborn_links, sbl);
   return sbl;
 }
 
@@ -113,21 +87,13 @@ void sbl_consume(struct StubbornLink *sbl, struct timeval *timeout) {
 }
 
 void sbl_set_callback(struct StubbornLink *sbl,
-                      void (*cb)(struct StubbornLink *, SblDeliver *)) {
+                      void (*cb)(void *, SblDeliver *), void *ctx) {
   sbl->cb = cb;
+  sbl->ctx = ctx;
 }
 
 void sbl_free(struct StubbornLink *sbl) {
   fll_free(sbl->fair_loss_link);
-  int idx = list_index(_stubborn_links, sbl);
-  if (idx >= 0) {
-    list_remove(_stubborn_links, idx);
-  }
-
   list_free(sbl->outbox);
   free(sbl);
-
-  if (_stubborn_links->count == 0) {
-    list_free(_stubborn_links);
-  }
 }

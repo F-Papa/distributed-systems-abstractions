@@ -15,6 +15,6 @@ int sbl_send(struct StubbornLink *sbl, SblSend *e);
 void sbl_consume(struct StubbornLink *sbl, struct timeval *timeout);
 
 void sbl_set_callback(struct StubbornLink *sbl,
-                      void (*cb)(struct StubbornLink *, SblDeliver *));
+                      void (*cb)(void *, SblDeliver *), void *ctx);
 
 void sbl_free(struct StubbornLink *sbl);
