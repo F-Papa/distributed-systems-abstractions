@@ -1,5 +1,7 @@
 #include "link/logged_perfect_link.h"
 #include <stdlib.h>
+#include <string.h>
+#include <uuid.h>
 
 #define DELIM_LEN 1
 
@@ -15,15 +17,16 @@ struct LoggedPerfectLink {
 };
 
 static void wrapper(void *ctx, SblDeliver *e) {
-  char id[50];
+  char id[UUID_STR_LEN];
   int id_len = strcspn(e->msg, ",");
   strncpy(id, e->msg, id_len);
+  id[id_len] = '\0';
 
   struct LoggedPerfectLink *lpl = ctx;
 
   for (size_t i = 0; i < lpl->deliveries->count; i++) {
     LplDeliver *prev_delivery = list_get(lpl->deliveries, i);
-    if (prev_delivery->id == atoi(id)) {
+    if (strcmp(prev_delivery->id, id) == 0) {
       return;
     }
   }
@@ -34,7 +37,7 @@ static void wrapper(void *ctx, SblDeliver *e) {
   }
 
   LplDeliver *lpl_delivery = calloc(1, sizeof(LplDeliver));
-  lpl_delivery->id = atoi(id);
+  strcpy(lpl_delivery->id, id);
   lpl_delivery->base = *e;
 
   list_add(lpl->deliveries, lpl_delivery);
@@ -69,10 +72,11 @@ struct LoggedPerfectLink *lpl_init(int id, int retransmission_period) {
 }
 
 int lpl_send(struct LoggedPerfectLink *lpl, LplSend *e) {
+  uuid_t uuid;
+  uuid_generate_random(uuid);
+  uuid_unparse(uuid, e->id);
   char buf[MAX_MSG_LEN];
-  int random = (float)rand() / (float)RAND_MAX * 10e7;
-  e->id = time(NULL) - random;
-  snprintf(buf, MAX_MSG_LEN, "%ld,%s", e->id, e->base.msg);
+  snprintf(buf, MAX_MSG_LEN, "%s,%s", e->id, e->base.msg);
   strcpy(e->base.msg, buf);
   return sbl_send(lpl->stubborn_link, &e->base);
 }

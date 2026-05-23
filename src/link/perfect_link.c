@@ -6,6 +6,7 @@
 #include <stdlib.h>
 #include <string.h>
 #include <sys/types.h>
+#include <uuid.h>
 
 #define DELIM_LEN 1
 
@@ -21,16 +22,21 @@ unsigned long djb2(const char *str) {
   unsigned long hash = 5381;
   int c;
   while ((c = *str++))
-    hash = ((hash << 5) + hash) + c; // hash * 33 + c
+    hash = ((hash << 5) + hash) + c;
   return hash;
 }
 
 static void wrapper(void *ctx, SblDeliver *e) {
   struct PerfectLink *pl = ctx;
 
+  char id[UUID_STR_LEN];
+  int id_len = strcspn(e->msg, ",");
+  strncpy(id, e->msg, id_len);
+  id[id_len] = '\0';
+
   unsigned long *hash = calloc(1, sizeof(unsigned long));
   char to_hash[MAX_MSG_LEN];
-  snprintf(to_hash, MAX_MSG_LEN, "%d%s", e->sender, e->msg);
+  snprintf(to_hash, MAX_MSG_LEN, "%d%s", e->sender, id);
   *hash = djb2(to_hash);
 
   for (size_t i = 0; i < pl->inbox->count; i++) {
@@ -39,10 +45,6 @@ static void wrapper(void *ctx, SblDeliver *e) {
     }
   }
 
-  char id[10];
-  int id_len = strcspn(e->msg, ",");
-  strncpy(id, e->msg, id_len);
-
   int offset = id_len + DELIM_LEN;
 
   for (size_t i = 0; i < strlen(e->msg) - DELIM_LEN; i++) {
@@ -50,7 +52,8 @@ static void wrapper(void *ctx, SblDeliver *e) {
   }
 
   list_add(pl->inbox, hash);
-  PlDeliver pl_event = {.base = *e, .id = atol(id)};
+  PlDeliver pl_event = {.base = *e};
+  strcpy(pl_event.id, id);
   debug("Calling PL Callback\n");
   pl->cb(pl->ctx, &pl_event);
   debug("PL Callback Returned\n");
@@ -82,10 +85,11 @@ struct PerfectLink *pl_init(int id, int retransmission_period) {
 }
 
 int pl_send(struct PerfectLink *pl, PlSend *e) {
+  uuid_t uuid;
+  uuid_generate_random(uuid);
+  uuid_unparse(uuid, e->id);
   SblSend msg_with_id = {.recipient = e->base.recipient};
-  int random = (float)rand() / (float)RAND_MAX * 10e7;
-  e->id = time(NULL) - random;
-  snprintf(msg_with_id.msg, MAX_MSG_LEN, "%ld,%s", e->id, e->base.msg);
+  snprintf(msg_with_id.msg, MAX_MSG_LEN, "%s,%s", e->id, e->base.msg);
   return sbl_send(pl->stubborn_link, &msg_with_id);
 }
 

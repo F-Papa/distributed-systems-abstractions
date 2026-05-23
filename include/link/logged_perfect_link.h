@@ -1,14 +1,16 @@
 #include "utils/list.h"
 #include "link/stubborn_link.h"
 
+#define UUID_STR_LEN 37
+
 typedef struct {
   SblSend base;
-  long id;
+  char id[UUID_STR_LEN];
 } LplSend;
 
 typedef struct {
   SblDeliver base;
-  long id;
+  char id[UUID_STR_LEN];
 } LplDeliver;
 
 struct LoggedPerfectLink;
