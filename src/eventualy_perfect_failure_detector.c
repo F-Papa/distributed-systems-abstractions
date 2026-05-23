@@ -1,0 +1,202 @@
+#include "eventually_perfect_failure_detector.h"
+#include "list.h"
+#include "string.h"
+#include <bits/types/struct_timeval.h>
+#include <stdlib.h>
+#include <sys/time.h>
+#include <time.h>
+
+#define DELIM_LEN 1
+#define HEALTHCHECK_INTERVAL_SEC 4
+
+typedef struct {
+  int peer_rank;
+} Crash;
+
+struct EventuallyPerfectFailureDetector {
+  struct PerfectLink *perfect_link;
+  void (*on_suspect_cb)(void *, Suspect *);
+  void *on_suspect_ctx;
+  void (*on_restore_cb)(void *, Restore *);
+  void *on_restore_ctx;
+  int max_rank;
+  int local_rank;
+  list_t *alive_peers;
+  list_t *suspected_peers;
+};
+
+static int try_parse_message(char *msg, char *expected_header, char *body) {
+  if (strpbrk(msg, expected_header) != msg) {
+    return -1;
+  }
+  body = msg + strlen(expected_header) + DELIM_LEN;
+  return 0;
+}
+
+static int send_im_alive(struct PerfectLink *pl, int recipient) {
+  PlSend im_alive = {.base.msg = "IA", .base.recipient = recipient};
+  return pl_send(pl, &im_alive);
+}
+
+static int send_heartbeat(struct PerfectLink *pl, int recipient) {
+  PlSend im_alive = {.base.msg = "HB", .base.recipient = recipient};
+  return pl_send(pl, &im_alive);
+}
+
+static void pfd_callback(void *ctx, PlDeliver *e) {
+  Epfd *pfd = ctx;
+  char msg[MAX_MSG_LEN];
+  int *sender = calloc(1, sizeof(int));
+  *sender = e->base.sender;
+  if (try_parse_message(e->base.msg, "HB", msg) == 0) {
+    send_im_alive(pfd->perfect_link, *sender);
+
+  } else if (try_parse_message(e->base.msg, "IA", msg) == 0) {
+    list_add(pfd->alive_peers, sender);
+  } else {
+    printf("UNKNOW MESSAGE FROM %d: %s\n", *sender, e->base.msg);
+    free(sender);
+  }
+}
+
+void epfd_start(Epfd *pfd, struct timeval *external_timeout) {
+  struct timeval healthcheck_deadline, external_deadline;
+  struct timeval healtheck_timeout = {.tv_sec = HEALTHCHECK_INTERVAL_SEC,
+                                      .tv_usec = 0};
+
+  gettimeofday(&healthcheck_deadline, NULL);
+  timeradd(&healthcheck_deadline, &healtheck_timeout, &healthcheck_deadline);
+
+  if (external_timeout) {
+    gettimeofday(&external_deadline, NULL);
+    timeradd(&external_deadline, external_timeout, &external_deadline);
+  }
+
+  for (int peer_rank = 0; peer_rank <= pfd->max_rank; peer_rank++) {
+    if (peer_rank == pfd->local_rank)
+      continue;
+
+    send_heartbeat(pfd->perfect_link, peer_rank);
+  }
+
+  int done = 0;
+  while (!done) {
+    struct timeval *next_timeout;
+    if (!external_timeout ||
+        timercmp(&healtheck_timeout, external_timeout, <)) {
+      next_timeout = &healtheck_timeout;
+    } else {
+      next_timeout = external_timeout;
+    }
+
+    pl_consume(pfd->perfect_link, next_timeout);
+    struct timeval now;
+    gettimeofday(&now, NULL);
+
+    if (timercmp(&now, &healthcheck_deadline, >=)) {
+      for (size_t peer_rank = 1; peer_rank <= pfd->max_rank; peer_rank++) {
+        if (peer_rank == pfd->local_rank)
+          continue;
+
+        int is_alive = 0, is_faulty = 0;
+        for (int i = 0; i < pfd->alive_peers->count; i++) {
+          int *j = list_get(pfd->alive_peers, i);
+          if (*j == peer_rank) {
+            is_alive = 1;
+            break;
+          }
+        }
+        for (int i = 0; i < pfd->suspected_peers->count; i++) {
+          int *j = list_get(pfd->suspected_peers, i);
+          if (*j == peer_rank) {
+            is_faulty = 1;
+            break;
+          }
+        }
+        if (!is_alive && !is_faulty) {
+          int *peer_rank_cpy = calloc(1, sizeof(int));
+          *peer_rank_cpy = peer_rank;
+          list_add(pfd->suspected_peers, peer_rank_cpy);
+
+          Suspect suspect_indication = {.peer_rank = peer_rank};
+          pfd->on_suspect_cb(pfd->on_suspect_ctx, &suspect_indication);
+
+        } else if (is_alive && is_faulty) {
+          for (int i = 0; i < pfd->suspected_peers->count; i++) {
+            int *j = list_get(pfd->suspected_peers, i);
+            if (*j == peer_rank) {
+              list_remove(pfd->suspected_peers, i);
+              break;
+            }
+          }
+
+          Restore restore_indication = {.peer_rank = peer_rank};
+          pfd->on_restore_cb(pfd->on_restore_ctx, &restore_indication);
+        }
+        send_heartbeat(pfd->perfect_link, peer_rank);
+      }
+
+      while (pfd->alive_peers->count > 0) {
+        list_remove(pfd->alive_peers, 0);
+      }
+    }
+
+    done = external_timeout && timercmp(&now, &external_deadline, >=);
+  }
+}
+
+Epfd *epfd_init(int local_rank, int max_rank, int retransmission_period) {
+  struct PerfectLink *pl = pl_init(local_rank, retransmission_period);
+  if (pl == NULL) {
+    return NULL;
+  }
+
+  list_t *alive_peers = list_init();
+  if (alive_peers == NULL) {
+    pl_free(pl);
+    return NULL;
+  }
+
+  list_t *suspected_peers = list_init();
+  if (suspected_peers == NULL) {
+    pl_free(pl);
+    list_free(alive_peers);
+    return NULL;
+  }
+
+  Epfd *epfd = calloc(1, sizeof(Epfd) + max_rank * sizeof(int));
+  if (epfd == NULL) {
+    pl_free(pl);
+    list_free(alive_peers);
+    list_free(suspected_peers);
+    return NULL;
+  }
+
+  pl_set_callback(pl, &pfd_callback, epfd);
+
+  epfd->max_rank = max_rank;
+  epfd->local_rank = local_rank;
+  epfd->perfect_link = pl;
+  epfd->alive_peers = alive_peers;
+  epfd->suspected_peers = suspected_peers;
+
+  for (int i = 1; i < max_rank; i++) {
+    if (i == local_rank)
+      continue;
+    int *peer_rank = calloc(1, sizeof(int));
+    list_add(epfd->alive_peers, peer_rank);
+  }
+  return epfd;
+}
+
+void epfd_set_on_suspect(Epfd *epfd, void (*cb)(void *ctx, Suspect *e),
+                         void *ctx) {
+  epfd->on_suspect_cb = cb;
+  epfd->on_suspect_ctx = ctx;
+}
+
+void epfd_set_on_restore(Epfd *epfd, void (*cb)(void *ctx, Restore *e),
+                         void *ctx) {
+  epfd->on_restore_cb = cb;
+  epfd->on_restore_ctx = ctx;
+}
