@@ -80,7 +80,7 @@ int pl_send(struct PerfectLink *pl, PlSend *e) {
   char buf[MAX_MSG_LEN];
   e->id = time(NULL);
   snprintf(buf, MAX_MSG_LEN, "%ld,%s", e->id, e->base.msg);
-  strcpy(e->base.msg, buf);
+  strcpy(buf, e->base.msg);
   return sbl_send(pl->stubborn_link, &e->base);
 }
 
