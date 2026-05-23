@@ -77,6 +77,7 @@ void epfd_start(Epfd *pfd, struct timeval *external_timeout) {
     struct timeval *next_timeout = tv_min(&healtheck_timeout, external_timeout);
 
     pl_consume(pfd->perfect_link, next_timeout);
+
     struct timeval now;
     gettimeofday(&now, NULL);
 
@@ -100,6 +101,7 @@ void epfd_start(Epfd *pfd, struct timeval *external_timeout) {
             break;
           }
         }
+
         if (!is_alive && !is_faulty) {
           int *peer_rank_cpy = calloc(1, sizeof(int));
           *peer_rank_cpy = peer_rank;
@@ -120,6 +122,7 @@ void epfd_start(Epfd *pfd, struct timeval *external_timeout) {
           Restore restore_indication = {.peer_rank = peer_rank};
           pfd->on_restore_cb(pfd->on_restore_ctx, &restore_indication);
         }
+
         send_heartbeat(pfd->perfect_link, peer_rank);
       }
 

@@ -37,12 +37,15 @@ static void pfd_callback(void *ctx, PlDeliver *e) {
   char msg[MAX_MSG_LEN];
   int *sender = calloc(1, sizeof(int));
   *sender = e->base.sender;
+
   if (try_parse_message(e->base.msg, "HB", msg, MAX_MSG_LEN) == 0) {
     debug("HB from %d\n", *sender);
     send_im_alive(pfd->perfect_link, e->base.sender);
+
   } else if (try_parse_message(e->base.msg, "IA", msg, MAX_MSG_LEN) == 0) {
     debug("IA from %d\n", *sender);
     list_add(pfd->alive_peers, sender);
+
   } else {
     printf("UNKNOW MESSAGE FROM %d: %s\n", *sender, e->base.msg);
     free(sender);
@@ -72,9 +75,9 @@ void pfd_start(struct PerfectFailureDetector *pfd,
   int done = 0;
   while (!done) {
     struct timeval *next_timeout = tv_min(&healtheck_timeout, external_timeout);
-
     debug("Waiting for next timer\n");
     pl_consume(pfd->perfect_link, next_timeout);
+
     struct timeval now;
     gettimeofday(&now, NULL);
 
@@ -92,6 +95,7 @@ void pfd_start(struct PerfectFailureDetector *pfd,
             break;
           }
         }
+
         for (int i = 0; i < pfd->faulty_peers->count; i++) {
           int *j = list_get(pfd->faulty_peers, i);
           if (*j == peer_rank) {
@@ -99,6 +103,7 @@ void pfd_start(struct PerfectFailureDetector *pfd,
             break;
           }
         }
+
         if (!is_alive && !is_faulty) {
           int *peer_rank_cpy = calloc(1, sizeof(int));
           *peer_rank_cpy = peer_rank;
@@ -107,12 +112,14 @@ void pfd_start(struct PerfectFailureDetector *pfd,
           Crash crash_indication = {.peer_id = peer_rank};
           pfd->on_crash_cb(pfd->ctx, &crash_indication);
         }
+
         send_heartbeat(pfd->perfect_link, peer_rank);
       }
 
       while (pfd->alive_peers->count > 0) {
         list_remove(pfd->alive_peers, 0);
       }
+
       healtheck_timeout.tv_sec = HEALTHCHECK_INTERVAL_SEC;
       healtheck_timeout.tv_usec = 0;
       tv_reset_deadline(&healthcheck_deadline, &healtheck_timeout);

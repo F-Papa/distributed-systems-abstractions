@@ -48,10 +48,12 @@ static void wrapper(void *ctx, FllDeliver *e) {
         return;
       }
     }
+
     Heartbeat *heartbeat_copy = calloc(1, sizeof(Heartbeat));
     heartbeat_copy->base = *e;
     heartbeat_copy->epoch = peer_epoch;
     list_add(ele->candidates, heartbeat_copy);
+
   } else {
     printf("UNKNOW MESSAGE FROM %d: %s\n", *sender, e->msg);
     free(sender);
@@ -157,10 +159,13 @@ void ele_start(Ele *ele, struct timeval *external_timeout) {
   int done = 0;
   while (!done) {
     struct timeval *next_timeout = tv_min(&heartbeat_timeout, external_timeout);
+
     debug("Waiting for next timer\n");
     fll_consume(ele->fair_loss_link, next_timeout);
+
     struct timeval now;
     gettimeofday(&now, NULL);
+
     if (timercmp(&now, &heartbeat_deadline, >=)) {
       debug("Timer done\n");
       Heartbeat best_candidate = {.base = {.sender = ele->local_rank},
@@ -179,6 +184,7 @@ void ele_start(Ele *ele, struct timeval *external_timeout) {
              last_hb->epoch == best_candidate.epoch)) {
           debug("New best candidate %d\n", last_hb->base.sender);
           best_candidate = *last_hb;
+
         } else {
           debug("Peer %d with epoch %d is not a better candidate\n",
                 last_hb->base.sender, last_hb->epoch);
@@ -208,6 +214,7 @@ void ele_start(Ele *ele, struct timeval *external_timeout) {
         send_heartbeat(ele->fair_loss_link, peer_rank, ele->local_epoch);
       }
     }
+
     done = external_timeout && timercmp(&now, &external_deadline, >=);
   }
 }

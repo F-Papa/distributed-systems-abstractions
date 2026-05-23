@@ -1,7 +1,7 @@
 #include "leader_election/monarchical_leader_election.h"
+#include "failure_detector/perfect_failure_detector.h"
 #include "utils/list.h"
 #include "utils/logging.h"
-#include "failure_detector/perfect_failure_detector.h"
 #include <bits/types/struct_timeval.h>
 #include <stdlib.h>
 
@@ -34,16 +34,20 @@ static void mle_callback_on_crash(void *ctx, Crash *e) {
 
   int candidate;
   debug("Electing new candidate\n");
+
   for (candidate = mle->max_rank; candidate > 0; candidate--) {
     int has_crashed = 0;
+
     for (int j = 0; j < mle->crashed_peers->count; j++) {
       int *crashed_peer_rank = list_get(mle->crashed_peers, j);
+
       if (*crashed_peer_rank == candidate) {
         has_crashed = 1;
         debug("%d is not a valid candidate\n", candidate);
         break;
       }
     }
+
     if (!has_crashed) {
       debug("%d is the best candidate\n");
       break;
