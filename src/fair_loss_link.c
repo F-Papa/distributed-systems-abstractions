@@ -1,5 +1,6 @@
 #include "fair_loss_link.h"
 #include "list.h"
+#include "logging.h"
 #include <sys/select.h>
 
 #define DELIM_LEN 1
@@ -103,6 +104,8 @@ int fll_send(struct FairLossLink *fll, FllSend *e) {
     return -1;
   };
 
+  debug("Sent %d bytes to %d: %s\n", len, e->recipient, buf);
+
   free(target_addr);
   return 0;
 }
@@ -129,15 +132,17 @@ void fll_consume(struct FairLossLink *fll, struct timeval *timeout) {
       };
 
       buf[len] = '\0';
+      debug("Received %d bytes: %s\n", len, buf);
       char id[10];
       int id_len = strcspn(buf, ",");
       strncpy(id, buf, id_len);
 
       FllDeliver *e = calloc(1, sizeof(FllDeliver));
-
       strcpy(e->msg, buf + id_len + DELIM_LEN);
       e->sender = atoi(id);
+      debug("=====> Calling FLL Callback\n");
       fll->callback(fll->ctx, e);
+      debug("<===== FLL Callback Returned\n");
     }
   }
 }

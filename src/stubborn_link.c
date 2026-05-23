@@ -1,5 +1,6 @@
 #include "stubborn_link.h"
 #include "list.h"
+#include "logging.h"
 #include <stdio.h>
 #include <unistd.h>
 
@@ -13,7 +14,9 @@ struct StubbornLink {
 
 static void wrapper(void *ctx, FllDeliver *e) {
   struct StubbornLink *sbl = ctx;
+  debug("Calling SBL Callback\n");
   sbl->cb(sbl->ctx, e);
+  debug("SBL Callback Returned\n");
 }
 
 struct StubbornLink *sbl_init(int id, int retransmission_period) {

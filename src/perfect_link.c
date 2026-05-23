@@ -1,5 +1,6 @@
 #include "perfect_link.h"
 #include "list.h"
+#include "logging.h"
 #include <stddef.h>
 #include <stdio.h>
 #include <stdlib.h>
@@ -28,7 +29,9 @@ static void wrapper(void *ctx, SblDeliver *e) {
   struct PerfectLink *pl = ctx;
 
   unsigned long *hash = calloc(1, sizeof(unsigned long));
-  *hash = djb2(e->msg);
+  char to_hash[MAX_MSG_LEN];
+  snprintf(to_hash, MAX_MSG_LEN, "%d%s", e->sender, e->msg);
+  *hash = djb2(to_hash);
 
   for (size_t i = 0; i < pl->inbox->count; i++) {
     if (*(unsigned long *)list_get(pl->inbox, i) == *hash) {
@@ -48,7 +51,9 @@ static void wrapper(void *ctx, SblDeliver *e) {
 
   list_add(pl->inbox, hash);
   PlDeliver pl_event = {.base = *e, .id = atol(id)};
+  debug("Calling PL Callback\n");
   pl->cb(pl->ctx, &pl_event);
+  debug("PL Callback Returned\n");
 }
 
 struct PerfectLink *pl_init(int id, int retransmission_period) {
@@ -77,11 +82,11 @@ struct PerfectLink *pl_init(int id, int retransmission_period) {
 }
 
 int pl_send(struct PerfectLink *pl, PlSend *e) {
-  char buf[MAX_MSG_LEN];
-  e->id = time(NULL);
-  snprintf(buf, MAX_MSG_LEN, "%ld,%s", e->id, e->base.msg);
-  strcpy(buf, e->base.msg);
-  return sbl_send(pl->stubborn_link, &e->base);
+  SblSend msg_with_id = {.recipient = e->base.recipient};
+  int random = (float)rand() / (float)RAND_MAX * 10e7;
+  e->id = time(NULL) - random;
+  snprintf(msg_with_id.msg, MAX_MSG_LEN, "%ld,%s", e->id, e->base.msg);
+  return sbl_send(pl->stubborn_link, &msg_with_id);
 }
 
 void pl_consume(struct PerfectLink *pl, struct timeval *timeout) {
