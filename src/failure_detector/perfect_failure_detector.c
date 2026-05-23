@@ -3,6 +3,7 @@
 #include "utils/list.h"
 #include "utils/logging.h"
 #include "utils/parsing.h"
+#include "utils/timeout.h"
 #include <bits/types/struct_timeval.h>
 #include <stdlib.h>
 #include <sys/time.h>
@@ -54,8 +55,7 @@ void pfd_start(struct PerfectFailureDetector *pfd,
   struct timeval healtheck_timeout = {.tv_sec = HEALTHCHECK_INTERVAL_SEC,
                                       .tv_usec = 0};
 
-  gettimeofday(&healthcheck_deadline, NULL);
-  timeradd(&healthcheck_deadline, &healtheck_timeout, &healthcheck_deadline);
+  tv_reset_deadline(&healthcheck_deadline, &healtheck_timeout);
 
   if (external_timeout) {
     gettimeofday(&external_deadline, NULL);
@@ -71,13 +71,7 @@ void pfd_start(struct PerfectFailureDetector *pfd,
 
   int done = 0;
   while (!done) {
-    struct timeval *next_timeout;
-    if (!external_timeout ||
-        timercmp(&healtheck_timeout, external_timeout, <)) {
-      next_timeout = &healtheck_timeout;
-    } else {
-      next_timeout = external_timeout;
-    }
+    struct timeval *next_timeout = tv_min(&healtheck_timeout, external_timeout);
 
     debug("Waiting for next timer\n");
     pl_consume(pfd->perfect_link, next_timeout);
@@ -121,9 +115,7 @@ void pfd_start(struct PerfectFailureDetector *pfd,
       }
       healtheck_timeout.tv_sec = HEALTHCHECK_INTERVAL_SEC;
       healtheck_timeout.tv_usec = 0;
-      gettimeofday(&healthcheck_deadline, NULL);
-      timeradd(&healthcheck_deadline, &healtheck_timeout,
-               &healthcheck_deadline);
+      tv_reset_deadline(&healthcheck_deadline, &healtheck_timeout);
     }
 
     done = external_timeout && timercmp(&now, &external_deadline, >=);

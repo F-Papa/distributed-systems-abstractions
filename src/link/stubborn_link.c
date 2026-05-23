@@ -1,6 +1,7 @@
 #include "link/stubborn_link.h"
 #include "utils/list.h"
 #include "utils/logging.h"
+#include "utils/timeout.h"
 #include <stdio.h>
 #include <unistd.h>
 
@@ -57,21 +58,16 @@ void sbl_consume(struct StubbornLink *sbl, struct timeval *timeout) {
   struct timeval retrans_timeout = {.tv_sec = sbl->retransmission_period,
                                     .tv_usec = 0};
 
-  gettimeofday(&retrans_deadline, NULL);
-  timeradd(&retrans_deadline, &retrans_timeout, &retrans_deadline);
+  tv_reset_deadline(&retrans_deadline, &retrans_timeout);
 
   if (timeout) {
     gettimeofday(&done_deadline, NULL);
     timeradd(&done_deadline, timeout, &done_deadline);
   }
 
-  for (int done = 0; !done;) {
-    struct timeval *min_to;
-    if (!timeout || timercmp(&retrans_timeout, timeout, <)) {
-      min_to = &retrans_timeout;
-    } else {
-      min_to = timeout;
-    }
+  int done = 0;
+  while (!done) {
+    struct timeval *min_to = tv_min(&retrans_timeout, timeout);
 
     fll_consume(sbl->fair_loss_link, min_to);
 
@@ -83,8 +79,7 @@ void sbl_consume(struct StubbornLink *sbl, struct timeval *timeout) {
       }
       retrans_timeout.tv_sec = sbl->retransmission_period;
       retrans_timeout.tv_usec = 0;
-      gettimeofday(&retrans_deadline, NULL);
-      timeradd(&retrans_deadline, &retrans_timeout, &retrans_deadline);
+      tv_reset_deadline(&retrans_deadline, &retrans_timeout);
     }
 
     done = timeout && timercmp(&now, &done_deadline, >=);

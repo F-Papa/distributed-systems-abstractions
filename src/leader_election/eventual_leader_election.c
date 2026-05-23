@@ -3,6 +3,7 @@
 #include "utils/list.h"
 #include "utils/logging.h"
 #include "utils/parsing.h"
+#include "utils/timeout.h"
 #include <bits/types/struct_timeval.h>
 #include <stdio.h>
 #include <stdlib.h>
@@ -139,8 +140,7 @@ void ele_start(Ele *ele, struct timeval *external_timeout) {
   struct timeval heartbeat_timeout = {.tv_sec = ele->period_duration_secs,
                                       .tv_usec = 0};
 
-  gettimeofday(&heartbeat_deadline, NULL);
-  timeradd(&heartbeat_deadline, &heartbeat_timeout, &heartbeat_deadline);
+  tv_reset_deadline(&heartbeat_deadline, &heartbeat_timeout);
 
   if (external_timeout) {
     gettimeofday(&external_deadline, NULL);
@@ -156,13 +156,7 @@ void ele_start(Ele *ele, struct timeval *external_timeout) {
 
   int done = 0;
   while (!done) {
-    struct timeval *next_timeout;
-    if (!external_timeout ||
-        timercmp(&heartbeat_timeout, external_timeout, <)) {
-      next_timeout = &heartbeat_timeout;
-    } else {
-      next_timeout = external_timeout;
-    }
+    struct timeval *next_timeout = tv_min(&heartbeat_timeout, external_timeout);
     debug("Waiting for next timer\n");
     fll_consume(ele->fair_loss_link, next_timeout);
     struct timeval now;
@@ -202,8 +196,7 @@ void ele_start(Ele *ele, struct timeval *external_timeout) {
 
       heartbeat_timeout.tv_sec = ele->period_duration_secs;
       heartbeat_timeout.tv_usec = 0;
-      gettimeofday(&heartbeat_deadline, NULL);
-      timeradd(&heartbeat_deadline, &heartbeat_timeout, &heartbeat_deadline);
+      tv_reset_deadline(&heartbeat_deadline, &heartbeat_timeout);
 
       while (ele->candidates->count > 0)
         list_remove(ele->candidates, 0);
@@ -215,6 +208,7 @@ void ele_start(Ele *ele, struct timeval *external_timeout) {
         send_heartbeat(ele->fair_loss_link, peer_rank, ele->local_epoch);
       }
     }
+    done = external_timeout && timercmp(&now, &external_deadline, >=);
   }
 }
 

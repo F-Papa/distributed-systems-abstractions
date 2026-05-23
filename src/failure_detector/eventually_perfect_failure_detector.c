@@ -2,6 +2,7 @@
 #include "string.h"
 #include "utils/list.h"
 #include "utils/parsing.h"
+#include "utils/timeout.h"
 #include <bits/types/struct_timeval.h>
 #include <stdlib.h>
 #include <sys/time.h>
@@ -57,8 +58,7 @@ void epfd_start(Epfd *pfd, struct timeval *external_timeout) {
   struct timeval healtheck_timeout = {.tv_sec = HEALTHCHECK_INTERVAL_SEC,
                                       .tv_usec = 0};
 
-  gettimeofday(&healthcheck_deadline, NULL);
-  timeradd(&healthcheck_deadline, &healtheck_timeout, &healthcheck_deadline);
+  tv_reset_deadline(&healthcheck_deadline, &healtheck_timeout);
 
   if (external_timeout) {
     gettimeofday(&external_deadline, NULL);
@@ -74,13 +74,7 @@ void epfd_start(Epfd *pfd, struct timeval *external_timeout) {
 
   int done = 0;
   while (!done) {
-    struct timeval *next_timeout;
-    if (!external_timeout ||
-        timercmp(&healtheck_timeout, external_timeout, <)) {
-      next_timeout = &healtheck_timeout;
-    } else {
-      next_timeout = external_timeout;
-    }
+    struct timeval *next_timeout = tv_min(&healtheck_timeout, external_timeout);
 
     pl_consume(pfd->perfect_link, next_timeout);
     struct timeval now;
@@ -132,6 +126,10 @@ void epfd_start(Epfd *pfd, struct timeval *external_timeout) {
       while (pfd->alive_peers->count > 0) {
         list_remove(pfd->alive_peers, 0);
       }
+
+      healtheck_timeout.tv_sec = HEALTHCHECK_INTERVAL_SEC;
+      healtheck_timeout.tv_usec = 0;
+      tv_reset_deadline(&healthcheck_deadline, &healtheck_timeout);
     }
 
     done = external_timeout && timercmp(&now, &external_deadline, >=);
