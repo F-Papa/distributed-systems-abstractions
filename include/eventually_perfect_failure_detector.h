@@ -20,3 +20,5 @@ void epfd_set_on_suspect(Epfd *epfd, void (*cb)(void *ctx, Suspect *e),
                          void *ctx);
 
 void epfd_start(Epfd *, struct timeval *timeout);
+
+void epfd_free(Epfd *epfd);

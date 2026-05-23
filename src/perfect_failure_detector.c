@@ -177,3 +177,10 @@ void pfd_set_oncrash(struct PerfectFailureDetector *pfd,
   pfd->on_crash_cb = cb;
   pfd->ctx = ctx;
 }
+
+void pfd_free(struct PerfectFailureDetector *pfd) {
+  pl_free(pfd->perfect_link);
+  list_free(pfd->alive_peers);
+  list_free(pfd->faulty_peers);
+  free(pfd);
+}

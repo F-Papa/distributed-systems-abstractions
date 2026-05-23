@@ -200,3 +200,10 @@ void epfd_set_on_restore(Epfd *epfd, void (*cb)(void *ctx, Restore *e),
   epfd->on_restore_cb = cb;
   epfd->on_restore_ctx = ctx;
 }
+
+void epfd_free(Epfd *epfd) {
+  pl_free(epfd->perfect_link);
+  list_free(epfd->alive_peers);
+  list_free(epfd->suspected_peers);
+  free(epfd);
+}
