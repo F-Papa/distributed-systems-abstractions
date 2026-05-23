@@ -43,7 +43,9 @@ struct StubbornLink *sbl_init(int id, int retransmission_period) {
 }
 
 int sbl_send(struct StubbornLink *sbl, SblSend *e) {
-  list_add(sbl->outbox, e);
+  SblSend *copy = calloc(1, sizeof(SblSend));
+  *copy = *e;
+  list_add(sbl->outbox, copy);
   return fll_send(sbl->fair_loss_link, e);
 }
 
