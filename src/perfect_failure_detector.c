@@ -1,5 +1,6 @@
 #include "perfect_failure_detector.h"
 #include "list.h"
+#include "logging.h"
 #include "string.h"
 #include <bits/types/struct_timeval.h>
 #include <stdlib.h>
@@ -33,8 +34,8 @@ static int send_im_alive(struct PerfectLink *pl, int recipient) {
 }
 
 static int send_heartbeat(struct PerfectLink *pl, int recipient) {
-  PlSend im_alive = {.base.msg = "HB", .base.recipient = recipient};
-  return pl_send(pl, &im_alive);
+  PlSend heartbeat = {.base.msg = "HB", .base.recipient = recipient};
+  return pl_send(pl, &heartbeat);
 }
 
 static void pfd_callback(void *ctx, PlDeliver *e) {
@@ -43,9 +44,10 @@ static void pfd_callback(void *ctx, PlDeliver *e) {
   int *sender = calloc(1, sizeof(int));
   *sender = e->base.sender;
   if (try_parse_message(e->base.msg, "HB", msg) == 0) {
-    send_im_alive(pfd->perfect_link, *sender);
-
+    debug("HB from %d\n", *sender);
+    send_im_alive(pfd->perfect_link, e->base.sender);
   } else if (try_parse_message(e->base.msg, "IA", msg) == 0) {
+    debug("IA from %d\n", *sender);
     list_add(pfd->alive_peers, sender);
   } else {
     printf("UNKNOW MESSAGE FROM %d: %s\n", *sender, e->base.msg);
@@ -67,7 +69,7 @@ void pfd_start(struct PerfectFailureDetector *pfd,
     timeradd(&external_deadline, external_timeout, &external_deadline);
   }
 
-  for (int peer_rank = 0; peer_rank <= pfd->max_rank; peer_rank++) {
+  for (int peer_rank = 1; peer_rank <= pfd->max_rank; peer_rank++) {
     if (peer_rank == pfd->local_rank)
       continue;
 
@@ -84,11 +86,13 @@ void pfd_start(struct PerfectFailureDetector *pfd,
       next_timeout = external_timeout;
     }
 
+    debug("Waiting for next timer\n");
     pl_consume(pfd->perfect_link, next_timeout);
     struct timeval now;
     gettimeofday(&now, NULL);
 
     if (timercmp(&now, &healthcheck_deadline, >=)) {
+      debug("Timer done\n");
       for (size_t peer_rank = 1; peer_rank <= pfd->max_rank; peer_rank++) {
         if (peer_rank == pfd->local_rank)
           continue;
@@ -122,6 +126,11 @@ void pfd_start(struct PerfectFailureDetector *pfd,
       while (pfd->alive_peers->count > 0) {
         list_remove(pfd->alive_peers, 0);
       }
+      healtheck_timeout.tv_sec = HEALTHCHECK_INTERVAL_SEC;
+      healtheck_timeout.tv_usec = 0;
+      gettimeofday(&healthcheck_deadline, NULL);
+      timeradd(&healthcheck_deadline, &healtheck_timeout,
+               &healthcheck_deadline);
     }
 
     done = external_timeout && timercmp(&now, &external_deadline, >=);
