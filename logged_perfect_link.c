@@ -1,36 +1,45 @@
 #include "logged_perfect_link.h"
 #include <stdlib.h>
 
-static void (*lpl_delivery_callback)(LplDeliver *, size_t) = NULL;
-static LplDeliver *_deliveries = NULL;
-static int _len_deliveries = 0;
-
 #define DELIM_LEN 1
 
 // TODO: Implement store/retrieve from disk
 void retrieve_deliveries() {}
 void store_deliveries() {}
 
-void lpl_callback_wrapper(SblDeliver *deliver) {
-  char id[10];
-  int id_len = strcspn(deliver->msg, ",");
-  strncpy(id, deliver->msg, id_len);
+struct LoggedPerfectLink {
+  struct StubbornLink *stubborn_link;
+  void (*cb)(void *, const list_t *);
+  void *ctx;
+  list_t *deliveries;
+};
 
-  for (size_t i = 0; i < _len_deliveries; i++) {
-    if (_deliveries[i].id == atoi(id)) {
+static void wrapper(void *ctx, SblDeliver *e) {
+  char id[50];
+  int id_len = strcspn(e->msg, ",");
+  strncpy(id, e->msg, id_len);
+
+  struct LoggedPerfectLink *lpl = ctx;
+
+  for (size_t i = 0; i < lpl->deliveries->count; i++) {
+    LplDeliver *prev_delivery = list_get(lpl->deliveries, i);
+    if (prev_delivery->id == atoi(id)) {
       return;
     }
   }
 
   int offset = id_len + DELIM_LEN;
-  for (size_t i = 0; i < strlen(deliver->msg) - DELIM_LEN; i++) {
-    deliver->msg[i] = deliver->msg[i + offset];
+  for (size_t i = 0; i < strlen(e->msg) - DELIM_LEN; i++) {
+    e->msg[i] = e->msg[i + offset];
   }
 
-  LplDeliver lpl_event = {.base = *deliver, .id = atol(id)};
-  _deliveries[_len_deliveries++] = lpl_event;
+  LplDeliver *lpl_delivery = calloc(1, sizeof(LplDeliver));
+  lpl_delivery->id = atoi(id);
+  lpl_delivery->base = *e;
+
+  list_add(lpl->deliveries, lpl_delivery);
   store_deliveries();
-  lpl_delivery_callback(_deliveries, _len_deliveries);
+  lpl->cb(lpl->ctx, lpl->deliveries);
 }
 
 struct LoggedPerfectLink *lpl_init(int id, int retransmission_period) {
@@ -38,30 +47,25 @@ struct LoggedPerfectLink *lpl_init(int id, int retransmission_period) {
   if (sbl == NULL)
     return NULL;
 
-  _len_deliveries = 0;
-  _deliveries = calloc(MSG_CAPACITY * MAX_MSG_LEN, sizeof(char));
-  if (_deliveries == NULL) {
+  list_t *deliveries = list_init();
+  if (deliveries == NULL) {
     sbl_free(sbl);
     return NULL;
   }
 
-  sbl_set_callback(sbl, lpl_callback_wrapper);
   struct LoggedPerfectLink *lpl = calloc(1, sizeof(struct LoggedPerfectLink));
   if (lpl == NULL) {
     sbl_free(sbl);
-    free(_deliveries);
+    list_free(deliveries);
     return NULL;
   }
 
+  sbl_set_callback(sbl, &wrapper, lpl);
+  lpl->deliveries = deliveries;
   lpl->stubborn_link = sbl;
   retrieve_deliveries();
 
   return lpl;
-}
-
-void get_deliveries(LplDeliver **deliveries, size_t *len) {
-  *deliveries = _deliveries;
-  *len = _len_deliveries;
 }
 
 int lpl_send(struct LoggedPerfectLink *lpl, LplSend *e) {
@@ -78,11 +82,14 @@ void lpl_consume(struct LoggedPerfectLink *lpl, struct timeval *timeout) {
 };
 
 void lpl_set_callback(struct LoggedPerfectLink *lpl,
-                      void (*cb)(LplDeliver *deliveries, size_t len)) {
-  lpl_delivery_callback = cb;
+                      void (*cb)(void *ctx, const list_t *deliveries),
+                      void *ctx) {
+  lpl->cb = cb;
+  lpl->ctx = ctx;
 }
 
 void lpl_free(struct LoggedPerfectLink *lpl) {
   sbl_free(lpl->stubborn_link);
+  list_free(lpl->deliveries);
   free(lpl);
 }
