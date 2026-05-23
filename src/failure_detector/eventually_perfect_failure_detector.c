@@ -1,6 +1,7 @@
 #include "failure_detector/eventually_perfect_failure_detector.h"
-#include "utils/list.h"
 #include "string.h"
+#include "utils/list.h"
+#include "utils/parsing.h"
 #include <bits/types/struct_timeval.h>
 #include <stdlib.h>
 #include <sys/time.h>
@@ -25,14 +26,6 @@ struct EventuallyPerfectFailureDetector {
   list_t *suspected_peers;
 };
 
-static int try_parse_message(char *msg, char *expected_header, char *body) {
-  if (strpbrk(msg, expected_header) != msg) {
-    return -1;
-  }
-  body = msg + strlen(expected_header) + DELIM_LEN;
-  return 0;
-}
-
 static int send_im_alive(struct PerfectLink *pl, int recipient) {
   PlSend im_alive = {.base.msg = "IA", .base.recipient = recipient};
   return pl_send(pl, &im_alive);
@@ -48,10 +41,10 @@ static void pfd_callback(void *ctx, PlDeliver *e) {
   char msg[MAX_MSG_LEN];
   int *sender = calloc(1, sizeof(int));
   *sender = e->base.sender;
-  if (try_parse_message(e->base.msg, "HB", msg) == 0) {
+  if (try_parse_message(e->base.msg, "HB", msg, MAX_MSG_LEN) == 0) {
     send_im_alive(pfd->perfect_link, *sender);
 
-  } else if (try_parse_message(e->base.msg, "IA", msg) == 0) {
+  } else if (try_parse_message(e->base.msg, "IA", msg, MAX_MSG_LEN) == 0) {
     list_add(pfd->alive_peers, sender);
   } else {
     printf("UNKNOW MESSAGE FROM %d: %s\n", *sender, e->base.msg);
