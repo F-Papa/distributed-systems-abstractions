@@ -89,7 +89,6 @@ void pfd_start(struct PerfectFailureDetector *pfd,
     gettimeofday(&now, NULL);
 
     if (timercmp(&now, &healthcheck_deadline, >=)) {
-      printf("FRANCO Timer reached\n");
       for (size_t peer_rank = 1; peer_rank <= pfd->max_rank; peer_rank++) {
         if (peer_rank == pfd->local_rank)
           continue;
