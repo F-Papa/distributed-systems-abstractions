@@ -12,7 +12,7 @@ typedef struct byzantine_complain {
   int peer_rank;
 } ByzComplain;
 
-Ble *ble_init(int rank, int retransmission_period, int max_faulty_peers,
+Ble *ble_init(int rank, int base_port, int retransmission_period, int max_faulty_peers,
               const unsigned char private_key[crypto_sign_SECRETKEYBYTES],
               int max_rank,
               const unsigned char public_keys[][crypto_sign_PUBLICKEYBYTES]);

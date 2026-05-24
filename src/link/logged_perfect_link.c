@@ -45,8 +45,9 @@ static void wrapper(void *ctx, SblDeliver *e) {
   lpl->cb(lpl->ctx, lpl->deliveries);
 }
 
-struct LoggedPerfectLink *lpl_init(int id, int retransmission_period) {
-  struct StubbornLink *sbl = sbl_init(id, retransmission_period);
+struct LoggedPerfectLink *lpl_init(int id, int base_port,
+                                   int retransmission_period) {
+  struct StubbornLink *sbl = sbl_init(id, base_port, retransmission_period);
   if (sbl == NULL)
     return NULL;
 

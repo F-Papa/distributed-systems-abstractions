@@ -11,7 +11,7 @@ typedef struct {
 
 typedef struct EventuallyPerfectFailureDetector Epfd;
 
-Epfd *epfd_init(int local_rank, int max_rank, int retransmission_period);
+Epfd *epfd_init(int local_rank, int max_rank, int base_port, int retransmission_period);
 
 void epfd_set_on_restore(Epfd *epfd, void (*cb)(void *ctx, Restore *e),
                          void *ctx);

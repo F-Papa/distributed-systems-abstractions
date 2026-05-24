@@ -59,8 +59,8 @@ static void mle_callback_on_crash(void *ctx, Crash *e) {
   mle->cb(mle->ctx, &leader);
 }
 
-Mle *mle_init(int local_rank, int max_rank, int retransmission_period) {
-  Pfd *pfd = pfd_init(local_rank, max_rank, retransmission_period);
+Mle *mle_init(int local_rank, int max_rank, int base_port, int retransmission_period) {
+  Pfd *pfd = pfd_init(local_rank, max_rank, base_port, retransmission_period);
   if (pfd == NULL) {
     return NULL;
   }

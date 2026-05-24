@@ -14,7 +14,7 @@ typedef struct {
 
 struct PerfectLink;
 
-struct PerfectLink *pl_init(int id, int retransmission_period);
+struct PerfectLink *pl_init(int id, int base_port, int retransmission_period);
 
 int pl_send(struct PerfectLink *pl, PlSend *e);
 

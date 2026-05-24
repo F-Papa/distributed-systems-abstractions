@@ -14,7 +14,7 @@ typedef struct {
 typedef struct AuthPerfectLink Apl;
 
 struct AuthPerfectLink *
-apl_init(int id, int retransmission_period,
+apl_init(int id, int base_port, int retransmission_period,
          const unsigned char private_key[crypto_sign_SECRETKEYBYTES],
          int max_rank,
          const unsigned char public_keys[][crypto_sign_PUBLICKEYBYTES]);

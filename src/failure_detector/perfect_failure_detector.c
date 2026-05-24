@@ -129,8 +129,8 @@ void pfd_start(struct PerfectFailureDetector *pfd,
   }
 }
 
-Pfd *pfd_init(int local_rank, int max_rank, int retransmission_period) {
-  struct PerfectLink *pl = pl_init(local_rank, retransmission_period);
+Pfd *pfd_init(int local_rank, int max_rank, int base_port, int retransmission_period) {
+  struct PerfectLink *pl = pl_init(local_rank, base_port, retransmission_period);
   if (pl == NULL) {
     return NULL;
   }

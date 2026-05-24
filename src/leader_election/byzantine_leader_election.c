@@ -102,7 +102,7 @@ void ble_start(Ble *ble, struct timeval *timeout) {
   apl_consume(ble->auth_perfect_link, timeout);
 }
 
-Ble *ble_init(int rank, int retransmission_period, int max_faulty_peers,
+Ble *ble_init(int rank, int base_port, int retransmission_period, int max_faulty_peers,
               const unsigned char private_key[crypto_sign_SECRETKEYBYTES],
               int max_rank,
               const unsigned char public_keys[][crypto_sign_PUBLICKEYBYTES]) {
@@ -116,7 +116,7 @@ Ble *ble_init(int rank, int retransmission_period, int max_faulty_peers,
   }
 
   Apl *apl =
-      apl_init(rank, retransmission_period, private_key, max_rank, public_keys);
+      apl_init(rank, base_port, retransmission_period, private_key, max_rank, public_keys);
 
   if (apl == NULL) {
     return NULL;

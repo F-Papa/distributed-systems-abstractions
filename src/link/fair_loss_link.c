@@ -14,18 +14,19 @@ list_t *_links = NULL;
 
 struct FairLossLink {
   int id;
+  int base_port;
   int socket;
   fd_set reads;
   void (*callback)(void *, FllDeliver *);
   void *ctx;
 };
 
-void get_port(int id, char *port) {
-  int port_number = 3000 + id;
+void get_port(int id, int base_port, char *port) {
+  int port_number = base_port + id;
   sprintf(port, "%d", port_number);
 }
 
-struct FairLossLink *fll_init(int id) {
+struct FairLossLink *fll_init(int id, int base_port) {
   struct addrinfo hints, *resp;
   hints.ai_family = AF_UNSPEC;
   hints.ai_socktype = SOCK_DGRAM;
@@ -33,7 +34,7 @@ struct FairLossLink *fll_init(int id) {
   hints.ai_flags = AI_PASSIVE;
 
   char port[11];
-  get_port(id, port);
+  get_port(id, base_port, port);
 
   int status = getaddrinfo("0.0.0.0", port, &hints, &resp);
   if (status < 0) {
@@ -71,6 +72,7 @@ struct FairLossLink *fll_init(int id) {
 
   fll->socket = sock;
   fll->id = id;
+  fll->base_port = base_port;
   FD_ZERO(&fll->reads);
   FD_SET(sock, &fll->reads);
 
@@ -78,7 +80,7 @@ struct FairLossLink *fll_init(int id) {
   return fll;
 }
 
-struct addrinfo *get_peer_addr(int recipient_id) {
+struct addrinfo *get_peer_addr(const struct FairLossLink *fll, int recipient_id) {
   struct addrinfo hints, *resp;
   hints.ai_family = AF_UNSPEC;
   hints.ai_socktype = SOCK_DGRAM;
@@ -86,7 +88,7 @@ struct addrinfo *get_peer_addr(int recipient_id) {
   hints.ai_flags = AI_PASSIVE;
 
   char port[11];
-  get_port(recipient_id, port);
+  get_port(recipient_id, fll->base_port, port);
 
   int status = getaddrinfo(NULL, port, &hints, &resp);
   if (status < 0) {
@@ -98,7 +100,7 @@ struct addrinfo *get_peer_addr(int recipient_id) {
 }
 
 int fll_send(struct FairLossLink *fll, FllSend *e) {
-  struct addrinfo *target_addr = get_peer_addr(e->recipient);
+  struct addrinfo *target_addr = get_peer_addr(fll, e->recipient);
 
   char buf[MAX_MSG_LEN];
   int len = snprintf(buf, MAX_MSG_LEN, "%d,%s", fll->id, e->msg);

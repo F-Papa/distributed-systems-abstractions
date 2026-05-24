@@ -23,7 +23,7 @@ typedef struct fair_loss_link_deliver {
 
 struct FairLossLink;
 
-struct FairLossLink *fll_init(int id);
+struct FairLossLink *fll_init(int id, int base_port);
 
 int fll_send(struct FairLossLink *fll, FllSend *e);
 

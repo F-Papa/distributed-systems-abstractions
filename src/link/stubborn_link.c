@@ -20,8 +20,9 @@ static void wrapper(void *ctx, FllDeliver *e) {
   debug("SBL Callback Returned\n");
 }
 
-struct StubbornLink *sbl_init(int id, int retransmission_period) {
-  struct FairLossLink *fll = fll_init(id);
+struct StubbornLink *sbl_init(int id, int base_port,
+                              int retransmission_period) {
+  struct FairLossLink *fll = fll_init(id, base_port);
   if (fll == NULL)
     return NULL;
 

@@ -92,8 +92,8 @@ static int retrieve_epoch(int rank) {
   return epoch;
 }
 
-Ele *ele_init(int local_rank, int max_rank, int retransmission_period) {
-  struct FairLossLink *fll = fll_init(local_rank);
+Ele *ele_init(int local_rank, int max_rank, int base_port, int retransmission_period) {
+  struct FairLossLink *fll = fll_init(local_rank, base_port);
   if (fll == NULL) {
     return NULL;
   }

@@ -59,8 +59,8 @@ static void wrapper(void *ctx, SblDeliver *e) {
   debug("PL Callback Returned\n");
 }
 
-struct PerfectLink *pl_init(int id, int retransmission_period) {
-  struct StubbornLink *sbl = sbl_init(id, retransmission_period);
+struct PerfectLink *pl_init(int id, int base_port, int retransmission_period) {
+  struct StubbornLink *sbl = sbl_init(id, base_port, retransmission_period);
   if (sbl == NULL)
     return NULL;
 

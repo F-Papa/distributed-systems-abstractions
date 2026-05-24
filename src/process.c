@@ -2,6 +2,8 @@
 #include <stdio.h>
 #include <stdlib.h>
 
+#define BASE_PORT 3000
+
 struct CustomCtx {
   char *name;
 };
@@ -15,7 +17,7 @@ int main(int argc, char **argv) {
   int id = atoi(argv[1]);
   int max_rank = atoi(argv[2]);
 
-  Ele *ele = ele_init(id, max_rank, 2);
+  Ele *ele = ele_init(id, max_rank, BASE_PORT, 2);
   struct CustomCtx ctx = {.name = "Franco!"};
   ele_set_on_new_trust(ele, &on_leader, &ctx);
 

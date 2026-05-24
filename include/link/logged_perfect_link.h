@@ -1,5 +1,5 @@
-#include "utils/list.h"
 #include "link/stubborn_link.h"
+#include "utils/list.h"
 
 #define UUID_STR_LEN 37
 
@@ -15,7 +15,8 @@ typedef struct {
 
 struct LoggedPerfectLink;
 
-struct LoggedPerfectLink *lpl_init(int id, int retransmission_period);
+struct LoggedPerfectLink *lpl_init(int id, int base_port,
+                                   int retransmission_period);
 
 void get_deliveries(LplDeliver **deliveries, size_t *len);
 

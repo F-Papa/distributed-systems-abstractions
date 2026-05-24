@@ -53,11 +53,11 @@ static void wrapper(void *ctx, PlDeliver *e) {
 }
 
 struct AuthPerfectLink *
-apl_init(int id, int retransmission_period,
+apl_init(int id, int base_port, int retransmission_period,
          const unsigned char private_key[crypto_sign_SECRETKEYBYTES],
          int max_rank,
          const unsigned char public_keys[][crypto_sign_PUBLICKEYBYTES]) {
-  struct PerfectLink *pl = pl_init(id, retransmission_period);
+  struct PerfectLink *pl = pl_init(id, base_port, retransmission_period);
   if (pl == NULL)
     return NULL;
 

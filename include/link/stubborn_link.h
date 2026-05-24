@@ -8,7 +8,7 @@ typedef FllDeliver SblDeliver;
 
 struct StubbornLink;
 
-struct StubbornLink *sbl_init(int id, int retransmission_period);
+struct StubbornLink *sbl_init(int id, int base_port, int retransmission_period);
 
 int sbl_send(struct StubbornLink *sbl, SblSend *e);
 
