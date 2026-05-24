@@ -1,5 +1,5 @@
 CFLAGS = -Iinclude -I/usr/include/uuid -Wall -Wextra
-LDLIBS = -luuid
+LDLIBS = -luuid -lsodium
 SRCS = $(shell find src -name "*.c")
 OBJS = $(SRCS:.c=.o)
 
