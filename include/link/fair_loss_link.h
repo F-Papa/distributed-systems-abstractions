@@ -1,15 +1,10 @@
 #include <bits/types/struct_timeval.h>
-#include <errno.h>
 #include <netdb.h>
 #include <netinet/in.h>
 #include <stddef.h>
-#include <stdio.h>
-#include <stdlib.h>
-#include <string.h>
 #include <sys/select.h>
 #include <sys/socket.h>
 #include <sys/time.h>
-#include <time.h>
 #include <unistd.h>
 
 #define MAX_MSG_LEN 1024

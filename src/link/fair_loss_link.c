@@ -1,7 +1,12 @@
 #include "link/fair_loss_link.h"
 #include "utils/list.h"
 #include "utils/logging.h"
+#include <errno.h>
+#include <stdio.h>
+#include <stdlib.h>
+#include <string.h>
 #include <sys/select.h>
+#include <time.h>
 
 #define DELIM_LEN 1
 
