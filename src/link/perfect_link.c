@@ -1,3 +1,4 @@
+#include "constants.h"
 #include "link/perfect_link.h"
 #include "utils/list.h"
 #include "utils/logging.h"
@@ -7,8 +8,6 @@
 #include <string.h>
 #include <sys/types.h>
 #include <uuid.h>
-
-#define DELIM_LEN 1
 
 struct PerfectLink {
   struct StubbornLink *stubborn_link;

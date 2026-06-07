@@ -1,3 +1,6 @@
+#ifndef BYZANTINE_LEADER_ELECTION_H
+#define BYZANTINE_LEADER_ELECTION_H
+
 #include <bits/types/struct_timeval.h>
 #include <sodium.h>
 
@@ -23,3 +26,5 @@ void ble_set_on_trust_callback(Ble *ble, void (*cb)(void *, ByzTrust *),
 void ble_start(Ble *ble, struct timeval *timeout);
 
 void ble_free(Ble *ble);
+
+#endif

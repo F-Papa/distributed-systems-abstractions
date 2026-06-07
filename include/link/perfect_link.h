@@ -1,6 +1,8 @@
-#include "link/stubborn_link.h"
+#ifndef PERFECT_LINK_H
+#define PERFECT_LINK_H
 
-#define UUID_STR_LEN 37
+#include "constants.h"
+#include "link/stubborn_link.h"
 
 typedef struct {
   SblSend base;
@@ -24,3 +26,5 @@ void pl_set_callback(struct PerfectLink *pl, void (*cb)(void *, PlDeliver *e),
                      void *ctx);
 
 void pl_free(struct PerfectLink *pl);
+
+#endif

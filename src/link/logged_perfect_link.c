@@ -1,9 +1,8 @@
+#include "constants.h"
 #include "link/logged_perfect_link.h"
 #include <stdlib.h>
 #include <string.h>
 #include <uuid.h>
-
-#define DELIM_LEN 1
 
 // TODO: Implement store/retrieve from disk
 void retrieve_deliveries() {}

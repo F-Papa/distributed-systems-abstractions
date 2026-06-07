@@ -1,9 +1,8 @@
+#include "constants.h"
 #include "link/auth_perfect_link.h"
 #include "utils/logging.h"
 #include <stdlib.h>
 #include <string.h>
-
-#define DELIM_LEN 1
 
 struct AuthPerfectLink {
   struct PerfectLink *perfect_link;

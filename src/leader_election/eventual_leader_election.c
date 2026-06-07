@@ -1,3 +1,4 @@
+#include "constants.h"
 #include "leader_election/eventual_leader_election.h"
 #include "failure_detector/eventually_perfect_failure_detector.h"
 #include "utils/list.h"
@@ -9,7 +10,6 @@
 #include <stdlib.h>
 
 #define HEARTHBEAT_INTERVAL_SEC 4
-#define DELIM_LEN 1
 
 int HEARTBEAT_INCREMENT_SEC = 2;
 

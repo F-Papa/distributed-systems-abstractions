@@ -1,3 +1,6 @@
+#ifndef MONARCHICAL_LEADER_ELECTION_H
+#define MONARCHICAL_LEADER_ELECTION_H
+
 #include <bits/types/struct_timeval.h>
 
 typedef struct LeaderIndication {
@@ -13,3 +16,5 @@ void mle_start(Mle *mle, struct timeval *timeout);
 Mle *mle_init(int local_rank, int max_rank, int base_port, int retransmission_period);
 
 void mle_free(Mle *mle);
+
+#endif

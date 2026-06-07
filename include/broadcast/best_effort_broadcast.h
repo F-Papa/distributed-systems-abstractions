@@ -1,3 +1,6 @@
+#ifndef BEST_EFFORT_BROADCAST_H
+#define BEST_EFFORT_BROADCAST_H
+
 #include "link/perfect_link.h"
 #include <bits/types/struct_timeval.h>
 
@@ -22,3 +25,5 @@ void *beb_consume(Beb *beb, struct timeval *timeout);
 void *beb_set_callback(Beb *beb, void (*cb)(void *, BebDelivery *), void *ctx);
 
 void beb_free(Beb *beb);
+
+#endif

@@ -1,3 +1,4 @@
+#include "constants.h"
 #include "link/fair_loss_link.h"
 #include "utils/list.h"
 #include "utils/logging.h"
@@ -7,8 +8,6 @@
 #include <string.h>
 #include <sys/select.h>
 #include <time.h>
-
-#define DELIM_LEN 1
 
 list_t *_links = NULL;
 

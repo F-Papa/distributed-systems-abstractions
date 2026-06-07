@@ -1,5 +1,6 @@
+#include "constants.h"
 #include "failure_detector/perfect_failure_detector.h"
-#include "string.h"
+#include <string.h>
 #include "utils/list.h"
 #include "utils/logging.h"
 #include "utils/parsing.h"
@@ -9,7 +10,6 @@
 #include <sys/time.h>
 #include <time.h>
 
-#define DELIM_LEN 1
 #define HEALTHCHECK_INTERVAL_SEC 4
 
 struct PerfectFailureDetector {

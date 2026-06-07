@@ -1,7 +1,9 @@
+#ifndef LOGGED_PERFECT_LINK_H
+#define LOGGED_PERFECT_LINK_H
+
+#include "constants.h"
 #include "link/stubborn_link.h"
 #include "utils/list.h"
-
-#define UUID_STR_LEN 37
 
 typedef struct {
   SblSend base;
@@ -29,3 +31,5 @@ void lpl_set_callback(struct LoggedPerfectLink *lpl,
                       void *ctx);
 
 void lpl_free(struct LoggedPerfectLink *lpl);
+
+#endif

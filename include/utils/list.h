@@ -1,3 +1,6 @@
+#ifndef LIST_H
+#define LIST_H
+
 #include <stdio.h>
 #include <stdlib.h>
 #include <unistd.h>
@@ -23,3 +26,5 @@ int list_remove(list_t *l, size_t idx);
 void *list_get(list_t *l, size_t idx);
 
 int list_index(list_t *l, void *elem);
+
+#endif

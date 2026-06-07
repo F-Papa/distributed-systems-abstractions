@@ -1,3 +1,6 @@
+#ifndef AUTH_PERFECT_LINK_H
+#define AUTH_PERFECT_LINK_H
+
 #include "link/perfect_link.h"
 #include <sodium.h>
 
@@ -27,3 +30,5 @@ void apl_set_callback(struct AuthPerfectLink *apl,
                       void (*cb)(void *, AuthPlDeliver *e), void *ctx);
 
 void apl_free(struct AuthPerfectLink *apl);
+
+#endif

@@ -1,3 +1,6 @@
+#ifndef PERFECT_FAILURE_DETECTOR_H
+#define PERFECT_FAILURE_DETECTOR_H
+
 #include "link/perfect_link.h"
 #include <bits/types/struct_timeval.h>
 
@@ -15,3 +18,5 @@ void pfd_set_oncrash(struct PerfectFailureDetector *pfd,
 void pfd_start(struct PerfectFailureDetector *pfd, struct timeval *timeout);
 
 void pfd_free(struct PerfectFailureDetector *pfd);
+
+#endif

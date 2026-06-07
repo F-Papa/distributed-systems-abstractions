@@ -1,3 +1,6 @@
+#ifndef EVENTUALLY_PERFECT_FAILURE_DETECTOR_H
+#define EVENTUALLY_PERFECT_FAILURE_DETECTOR_H
+
 #include "link/perfect_link.h"
 #include <bits/types/struct_timeval.h>
 
@@ -22,3 +25,5 @@ void epfd_set_on_suspect(Epfd *epfd, void (*cb)(void *ctx, Suspect *e),
 void epfd_start(Epfd *, struct timeval *timeout);
 
 void epfd_free(Epfd *epfd);
+
+#endif

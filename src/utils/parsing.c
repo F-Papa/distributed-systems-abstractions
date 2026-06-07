@@ -1,6 +1,5 @@
-#include "string.h"
-
-#define DELIM_LEN 1
+#include "constants.h"
+#include <string.h>
 
 int try_parse_message(char *msg, char *expected_header, char *body, int len) {
   if (strpbrk(msg, expected_header) != msg) {
