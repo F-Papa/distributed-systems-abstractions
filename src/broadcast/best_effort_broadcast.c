@@ -1,4 +1,5 @@
 #include "broadcast/best_effort_broadcast.h"
+#include "link/perfect_link.h"
 #include <string.h>
 
 struct BestEffortBroadcast {
@@ -55,11 +56,11 @@ int beb_broadcast(Beb *beb, BebSend *e) {
   return 0;
 }
 
-void *beb_consume(Beb *beb, struct timeval *timeout) {
+void beb_consume(Beb *beb, struct timeval *timeout) {
   pl_consume(beb->perfect_link, timeout);
 }
 
-void *beb_set_callback(Beb *beb, void (*cb)(void *, BebDelivery *), void *ctx) {
+void beb_set_callback(Beb *beb, void (*cb)(void *, BebDelivery *), void *ctx) {
   beb->cb = cb;
   beb->ctx = ctx;
 }

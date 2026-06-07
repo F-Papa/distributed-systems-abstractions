@@ -1,7 +1,7 @@
 #ifndef BEST_EFFORT_BROADCAST_H
 #define BEST_EFFORT_BROADCAST_H
 
-#include "link/perfect_link.h"
+#include "constants.h"
 #include <bits/types/struct_timeval.h>
 
 typedef struct best_effort_broadcast_send {
@@ -20,9 +20,9 @@ Beb *beb_init(int local_rank, int max_rank, int base_port,
 
 int beb_broadcast(Beb *beb, BebSend *e);
 
-void *beb_consume(Beb *beb, struct timeval *timeout);
+void beb_consume(Beb *beb, struct timeval *timeout);
 
-void *beb_set_callback(Beb *beb, void (*cb)(void *, BebDelivery *), void *ctx);
+void beb_set_callback(Beb *beb, void (*cb)(void *, BebDelivery *), void *ctx);
 
 void beb_free(Beb *beb);
 
