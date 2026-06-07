@@ -1,4 +1,4 @@
-#include "leader_election/eventual_leader_election.h"
+#include "broadcast/best_effort_broadcast.h"
 #include <stdio.h>
 #include <stdlib.h>
 
@@ -8,20 +8,22 @@ struct CustomCtx {
   char *name;
 };
 
-void on_leader(void *ctx, Trust *e) {
+void on_delivery(void *ctx, BebDelivery *e) {
   struct CustomCtx *cc = ctx;
-  printf("[CTX: %s] Peer %d Is Trusted!\n", cc->name, e->peer_rank);
+  printf("[CTX: %s] Message from %d: %s\n", cc->name, e->sender, e->msg);
 }
 
 int main(int argc, char **argv) {
   int id = atoi(argv[1]);
   int max_rank = atoi(argv[2]);
 
-  Ele *ele = ele_init(id, max_rank, BASE_PORT, 2);
+  Beb *beb = beb_init(id, max_rank, BASE_PORT, 2);
   struct CustomCtx ctx = {.name = "Franco!"};
-  ele_set_on_new_trust(ele, &on_leader, &ctx);
+  beb_set_callback(beb, &on_delivery, &ctx);
 
   struct timeval to = {.tv_sec = 45, .tv_usec = 0};
-  ele_start(ele, &to);
-  ele_free(ele);
+  BebSend msg = {.msg = "Hello everyone!"};
+  beb_broadcast(beb, &msg);
+  beb_consume(beb, &to);
+  beb_free(beb);
 }
