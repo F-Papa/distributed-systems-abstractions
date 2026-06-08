@@ -14,4 +14,10 @@ static inline void tv_reset_deadline(struct timeval *deadline,
   timeradd(deadline, timeout, deadline);
 }
 
+static inline void tv_time_to_deadline(struct timeval *deadline,
+                                       struct timeval *time) {
+  gettimeofday(time, NULL);
+  timersub(deadline, time, time);
+}
+
 #endif
