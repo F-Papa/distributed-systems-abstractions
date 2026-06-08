@@ -44,9 +44,6 @@ int beb_broadcast(Beb *beb, BebSend *e) {
   strncpy(msg.base.msg, e->msg, MAX_MSG_LEN);
 
   for (size_t peer_rank = 1; peer_rank <= beb->max_rank; peer_rank++) {
-    if (peer_rank == beb->local_rank)
-      continue;
-
     msg.base.recipient = peer_rank;
     int status = pl_send(beb->perfect_link, &msg);
 
@@ -74,9 +71,7 @@ void beb_handle_fd_sets(Beb *beb, fd_set *reads, fd_set *writes) {
   pl_handle_fd_sets(beb->perfect_link, reads, writes);
 }
 
-void beb_handle_timeout(Beb *beb) {
-  pl_handle_timeout(beb->perfect_link);
-}
+void beb_handle_timeout(Beb *beb) { pl_handle_timeout(beb->perfect_link); }
 
 void beb_free(Beb *beb) {
   pl_free(beb->perfect_link);

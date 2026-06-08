@@ -1,6 +1,7 @@
 #ifndef TIMEOUT_UTILS_H
 #define TIMEOUT_UTILS_H
 
+#include <stdlib.h>
 #include <sys/time.h>
 
 static inline struct timeval *tv_min(struct timeval *a, struct timeval *b) {

@@ -13,6 +13,7 @@ void list_free(list_t *l) {
     for (size_t i = 0; i < l->count - 1; i++) {
       node = next;
       next = next->next;
+      free(node->element);
       free(node);
     }
   }
