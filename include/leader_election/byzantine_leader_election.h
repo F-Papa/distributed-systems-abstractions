@@ -2,6 +2,7 @@
 #define BYZANTINE_LEADER_ELECTION_H
 
 #include <bits/types/struct_timeval.h>
+#include <sys/select.h>
 #include <sodium.h>
 
 typedef struct ByzantineLeaderElector Ble;
@@ -26,5 +27,11 @@ void ble_set_on_trust_callback(Ble *ble, void (*cb)(void *, ByzTrust *),
 void ble_start(Ble *ble, struct timeval *timeout);
 
 void ble_free(Ble *ble);
+
+int ble_register_fd_sets(Ble *ble, fd_set *reads, fd_set *writes);
+
+void ble_handle_fd_sets(Ble *ble, fd_set *reads, fd_set *writes);
+
+void ble_handle_timeout(Ble *ble);
 
 #endif

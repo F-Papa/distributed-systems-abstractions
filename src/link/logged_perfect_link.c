@@ -107,3 +107,7 @@ void lpl_handle_fd_sets(struct LoggedPerfectLink *lpl, fd_set *reads,
                         fd_set *writes) {
   sbl_handle_fd_sets(lpl->stubborn_link, reads, writes);
 }
+
+void lpl_handle_timeout(struct LoggedPerfectLink *lpl) {
+  sbl_handle_timeout(lpl->stubborn_link);
+}

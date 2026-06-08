@@ -131,3 +131,7 @@ void apl_handle_fd_sets(struct AuthPerfectLink *apl, fd_set *reads,
                         fd_set *writes) {
   pl_handle_fd_sets(apl->perfect_link, reads, writes);
 }
+
+void apl_handle_timeout(struct AuthPerfectLink *apl) {
+  pl_handle_timeout(apl->perfect_link);
+}

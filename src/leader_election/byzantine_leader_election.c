@@ -90,6 +90,18 @@ static void ble_callback(void *ctx, AuthPlDeliver *deliver) {
   }
 }
 
+int ble_register_fd_sets(Ble *ble, fd_set *reads, fd_set *writes) {
+  return apl_register_fd_sets(ble->auth_perfect_link, reads, writes);
+}
+
+void ble_handle_fd_sets(Ble *ble, fd_set *reads, fd_set *writes) {
+  apl_handle_fd_sets(ble->auth_perfect_link, reads, writes);
+}
+
+void ble_handle_timeout(Ble *ble) {
+  apl_handle_timeout(ble->auth_perfect_link);
+}
+
 void ble_free(Ble *ble) {
   list_free(ble->complains);
   apl_free(ble->auth_perfect_link);

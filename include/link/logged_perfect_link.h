@@ -38,4 +38,6 @@ int lpl_register_fd_sets(struct LoggedPerfectLink *lpl, fd_set *reads,
 void lpl_handle_fd_sets(struct LoggedPerfectLink *lpl, fd_set *reads,
                         fd_set *writes);
 
+void lpl_handle_timeout(struct LoggedPerfectLink *lpl);
+
 #endif

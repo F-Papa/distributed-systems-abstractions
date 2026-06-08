@@ -1,6 +1,6 @@
-#include "constants.h"
 #include "leader_election/eventual_leader_election.h"
-#include "failure_detector/eventually_perfect_failure_detector.h"
+#include "constants.h"
+#include "link/fair_loss_link.h"
 #include "utils/list.h"
 #include "utils/logging.h"
 #include "utils/parsing.h"
@@ -92,7 +92,8 @@ static int retrieve_epoch(int rank) {
   return epoch;
 }
 
-Ele *ele_init(int local_rank, int max_rank, int base_port, int retransmission_period) {
+Ele *ele_init(int local_rank, int max_rank, int base_port,
+              int retransmission_period) {
   struct FairLossLink *fll = fll_init(local_rank, base_port);
   if (fll == NULL) {
     return NULL;
@@ -134,6 +135,59 @@ void ele_set_on_new_trust(Ele *ele, void (*cb)(void *, Trust *), void *ctx) {
   ele->ctx = ctx;
 }
 
+int ele_register_fd_sets(Ele *ele, fd_set *reads, fd_set *writes) {
+  return fll_register_fd_sets(ele->fair_loss_link, reads, writes);
+}
+
+void ele_handle_fd_sets(Ele *ele, fd_set *reads, fd_set *writes) {
+  fll_handle_fd_sets(ele->fair_loss_link, reads, writes);
+}
+
+void ele_handle_timeout(Ele *ele) {
+  debug("Timer done\n");
+  Heartbeat best_candidate = {.base = {.sender = ele->local_rank},
+                              .epoch = ele->local_epoch};
+
+  debug("Local epoch: %d | Leader: %d\n", ele->local_epoch, ele->leader);
+  for (int i = 0; i < ele->candidates->count; i++) {
+    Heartbeat *last_hb = list_get(ele->candidates, i);
+    debug("Peer %d Epoch %d\n", last_hb->base.sender, last_hb->epoch);
+  }
+
+  for (int i = 0; i < ele->candidates->count; i++) {
+    Heartbeat *last_hb = list_get(ele->candidates, i);
+    if (last_hb->epoch < best_candidate.epoch ||
+        (last_hb->base.sender > best_candidate.base.sender &&
+         last_hb->epoch == best_candidate.epoch)) {
+      debug("New best candidate %d\n", last_hb->base.sender);
+      best_candidate = *last_hb;
+
+    } else {
+      debug("Peer %d with epoch %d is not a better candidate\n",
+            last_hb->base.sender, last_hb->epoch);
+    }
+  }
+
+  if (best_candidate.base.sender != ele->leader) {
+    debug("New leader\n");
+    ele->leader = best_candidate.base.sender;
+    ele->period_duration_secs += HEARTBEAT_INCREMENT_SEC;
+
+    Trust trust_indication = {.peer_rank = ele->leader};
+    ele->cb(ele->ctx, &trust_indication);
+  }
+
+  while (ele->candidates->count > 0)
+    list_remove(ele->candidates, 0);
+
+  for (int peer_rank = 1; peer_rank <= ele->max_rank; peer_rank++) {
+    if (peer_rank == ele->local_rank)
+      continue;
+
+    send_heartbeat(ele->fair_loss_link, peer_rank, ele->local_epoch);
+  }
+}
+
 void ele_start(Ele *ele, struct timeval *external_timeout) {
   Trust leader = {.peer_rank = ele->leader};
   ele->cb(ele->ctx, &leader);
@@ -167,52 +221,10 @@ void ele_start(Ele *ele, struct timeval *external_timeout) {
     gettimeofday(&now, NULL);
 
     if (timercmp(&now, &heartbeat_deadline, >=)) {
-      debug("Timer done\n");
-      Heartbeat best_candidate = {.base = {.sender = ele->local_rank},
-                                  .epoch = ele->local_epoch};
-
-      debug("Local epoch: %d | Leader: %d\n", ele->local_epoch, ele->leader);
-      for (int i = 0; i < ele->candidates->count; i++) {
-        Heartbeat *last_hb = list_get(ele->candidates, i);
-        debug("Peer %d Epoch %d\n", last_hb->base.sender, last_hb->epoch);
-      }
-
-      for (int i = 0; i < ele->candidates->count; i++) {
-        Heartbeat *last_hb = list_get(ele->candidates, i);
-        if (last_hb->epoch < best_candidate.epoch ||
-            (last_hb->base.sender > best_candidate.base.sender &&
-             last_hb->epoch == best_candidate.epoch)) {
-          debug("New best candidate %d\n", last_hb->base.sender);
-          best_candidate = *last_hb;
-
-        } else {
-          debug("Peer %d with epoch %d is not a better candidate\n",
-                last_hb->base.sender, last_hb->epoch);
-        }
-      }
-
-      if (best_candidate.base.sender != ele->leader) {
-        debug("New leader\n");
-        ele->leader = best_candidate.base.sender;
-        ele->period_duration_secs += HEARTBEAT_INCREMENT_SEC;
-
-        Trust trust_indication = {.peer_rank = ele->leader};
-        ele->cb(ele->ctx, &trust_indication);
-      }
-
+      ele_handle_timeout(ele);
       heartbeat_timeout.tv_sec = ele->period_duration_secs;
       heartbeat_timeout.tv_usec = 0;
       tv_reset_deadline(&heartbeat_deadline, &heartbeat_timeout);
-
-      while (ele->candidates->count > 0)
-        list_remove(ele->candidates, 0);
-
-      for (int peer_rank = 1; peer_rank <= ele->max_rank; peer_rank++) {
-        if (peer_rank == ele->local_rank)
-          continue;
-
-        send_heartbeat(ele->fair_loss_link, peer_rank, ele->local_epoch);
-      }
     }
 
     done = external_timeout && timercmp(&now, &external_deadline, >=);

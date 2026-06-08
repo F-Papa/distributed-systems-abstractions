@@ -1,8 +1,8 @@
 #ifndef PERFECT_FAILURE_DETECTOR_H
 #define PERFECT_FAILURE_DETECTOR_H
 
-#include "link/perfect_link.h"
 #include <bits/types/struct_timeval.h>
+#include <sys/select.h>
 
 typedef struct {
   int peer_id;
@@ -10,7 +10,8 @@ typedef struct {
 
 typedef struct PerfectFailureDetector Pfd;
 
-Pfd *pfd_init(int local_rank, int max_rank, int base_port, int retransmission_period);
+Pfd *pfd_init(int local_rank, int max_rank, int base_port,
+              int retransmission_period);
 
 void pfd_set_oncrash(struct PerfectFailureDetector *pfd,
                      void (*cb)(void *ctx, Crash *e), void *ctx);
@@ -18,5 +19,13 @@ void pfd_set_oncrash(struct PerfectFailureDetector *pfd,
 void pfd_start(struct PerfectFailureDetector *pfd, struct timeval *timeout);
 
 void pfd_free(struct PerfectFailureDetector *pfd);
+
+int pfd_register_fd_sets(struct PerfectFailureDetector *pfd, fd_set *reads,
+                         fd_set *writes);
+
+void pfd_handle_fd_sets(struct PerfectFailureDetector *pfd, fd_set *reads,
+                        fd_set *writes);
+
+void pfd_handle_timeout(struct PerfectFailureDetector *pfd);
 
 #endif

@@ -1,12 +1,13 @@
-#include "constants.h"
 #include "failure_detector/perfect_failure_detector.h"
-#include <string.h>
+#include "constants.h"
+#include "link/perfect_link.h"
 #include "utils/list.h"
 #include "utils/logging.h"
 #include "utils/parsing.h"
 #include "utils/timeout.h"
 #include <bits/types/struct_timeval.h>
 #include <stdlib.h>
+#include <string.h>
 #include <sys/time.h>
 #include <time.h>
 
@@ -30,6 +31,56 @@ static int send_im_alive(struct PerfectLink *pl, int recipient) {
 static int send_heartbeat(struct PerfectLink *pl, int recipient) {
   PlSend heartbeat = {.base.msg = "HB", .base.recipient = recipient};
   return pl_send(pl, &heartbeat);
+}
+
+void pfd_handle_timeout(Pfd *pfd) {
+  debug("Timer done\n");
+  for (size_t peer_rank = 1; peer_rank <= pfd->max_rank; peer_rank++) {
+    if (peer_rank == pfd->local_rank)
+      continue;
+
+    int is_alive = 0, is_faulty = 0;
+    for (int i = 0; i < pfd->alive_peers->count; i++) {
+      int *j = list_get(pfd->alive_peers, i);
+      if (*j == peer_rank) {
+        is_alive = 1;
+        break;
+      }
+    }
+
+    for (int i = 0; i < pfd->faulty_peers->count; i++) {
+      int *j = list_get(pfd->faulty_peers, i);
+      if (*j == peer_rank) {
+        is_faulty = 1;
+        break;
+      }
+    }
+
+    if (!is_alive && !is_faulty) {
+      int *peer_rank_cpy = calloc(1, sizeof(int));
+      *peer_rank_cpy = peer_rank;
+      list_add(pfd->faulty_peers, peer_rank_cpy);
+
+      Crash crash_indication = {.peer_id = peer_rank};
+      pfd->on_crash_cb(pfd->ctx, &crash_indication);
+    }
+
+    send_heartbeat(pfd->perfect_link, peer_rank);
+  }
+
+  while (pfd->alive_peers->count > 0) {
+    list_remove(pfd->alive_peers, 0);
+  }
+}
+
+int pfd_register_fd_sets(struct PerfectFailureDetector *pfd, fd_set *reads,
+                         fd_set *writes) {
+  return pl_register_fd_sets(pfd->perfect_link, reads, writes);
+}
+
+void pfd_handle_fd_sets(struct PerfectFailureDetector *pfd, fd_set *reads,
+                        fd_set *writes) {
+  pl_handle_fd_sets(pfd->perfect_link, reads, writes);
 }
 
 static void pfd_callback(void *ctx, PlDeliver *e) {
@@ -83,43 +134,7 @@ void pfd_start(struct PerfectFailureDetector *pfd,
 
     if (timercmp(&now, &healthcheck_deadline, >=)) {
       debug("Timer done\n");
-      for (size_t peer_rank = 1; peer_rank <= pfd->max_rank; peer_rank++) {
-        if (peer_rank == pfd->local_rank)
-          continue;
-
-        int is_alive = 0, is_faulty = 0;
-        for (int i = 0; i < pfd->alive_peers->count; i++) {
-          int *j = list_get(pfd->alive_peers, i);
-          if (*j == peer_rank) {
-            is_alive = 1;
-            break;
-          }
-        }
-
-        for (int i = 0; i < pfd->faulty_peers->count; i++) {
-          int *j = list_get(pfd->faulty_peers, i);
-          if (*j == peer_rank) {
-            is_faulty = 1;
-            break;
-          }
-        }
-
-        if (!is_alive && !is_faulty) {
-          int *peer_rank_cpy = calloc(1, sizeof(int));
-          *peer_rank_cpy = peer_rank;
-          list_add(pfd->faulty_peers, peer_rank_cpy);
-
-          Crash crash_indication = {.peer_id = peer_rank};
-          pfd->on_crash_cb(pfd->ctx, &crash_indication);
-        }
-
-        send_heartbeat(pfd->perfect_link, peer_rank);
-      }
-
-      while (pfd->alive_peers->count > 0) {
-        list_remove(pfd->alive_peers, 0);
-      }
-
+      pfd_handle_timeout(pfd);
       healtheck_timeout.tv_sec = HEALTHCHECK_INTERVAL_SEC;
       healtheck_timeout.tv_usec = 0;
       tv_reset_deadline(&healthcheck_deadline, &healtheck_timeout);
@@ -129,8 +144,10 @@ void pfd_start(struct PerfectFailureDetector *pfd,
   }
 }
 
-Pfd *pfd_init(int local_rank, int max_rank, int base_port, int retransmission_period) {
-  struct PerfectLink *pl = pl_init(local_rank, base_port, retransmission_period);
+Pfd *pfd_init(int local_rank, int max_rank, int base_port,
+              int retransmission_period) {
+  struct PerfectLink *pl =
+      pl_init(local_rank, base_port, retransmission_period);
   if (pl == NULL) {
     return NULL;
   }

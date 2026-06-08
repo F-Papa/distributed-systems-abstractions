@@ -37,4 +37,6 @@ int apl_register_fd_sets(struct AuthPerfectLink *apl, fd_set *reads,
 void apl_handle_fd_sets(struct AuthPerfectLink *apl, fd_set *reads,
                         fd_set *writes);
 
+void apl_handle_timeout(struct AuthPerfectLink *apl);
+
 #endif
