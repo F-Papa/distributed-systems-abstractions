@@ -3,6 +3,7 @@
 
 #include "constants.h"
 #include <bits/types/struct_timeval.h>
+#include <sys/select.h>
 
 typedef struct best_effort_broadcast_send {
   char msg[MAX_MSG_LEN];
@@ -25,5 +26,11 @@ void beb_consume(Beb *beb, struct timeval *timeout);
 void beb_set_callback(Beb *beb, void (*cb)(void *, BebDelivery *), void *ctx);
 
 void beb_free(Beb *beb);
+
+int beb_register_fd_sets(Beb *beb, fd_set *reads, fd_set *writes);
+
+void beb_handle_fd_sets(Beb *beb, fd_set *reads, fd_set *writes);
+
+void beb_handle_timeout(Beb *beb);
 
 #endif
