@@ -2,9 +2,7 @@
 #define STUBBORN_LINK_H
 
 #include "link/fair_loss_link.h"
-#include <stdlib.h>
 #include <sys/time.h>
-#include <time.h>
 
 typedef FllSend SblSend;
 typedef FllDeliver SblDeliver;
@@ -21,5 +19,13 @@ void sbl_set_callback(struct StubbornLink *sbl,
                       void (*cb)(void *, SblDeliver *), void *ctx);
 
 void sbl_free(struct StubbornLink *sbl);
+
+int sbl_register_fd_sets(struct StubbornLink *sbl, fd_set *reads,
+                         fd_set *writes);
+
+void sbl_handle_fd_sets(struct StubbornLink *sbl, fd_set *reads,
+                        fd_set *writes);
+
+void sbl_handle_timeout(struct StubbornLink *sbl);
 
 #endif

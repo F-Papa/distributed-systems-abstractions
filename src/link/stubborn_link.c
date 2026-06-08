@@ -1,4 +1,5 @@
 #include "link/stubborn_link.h"
+#include "link/fair_loss_link.h"
 #include "utils/list.h"
 #include "utils/logging.h"
 #include "utils/timeout.h"
@@ -11,6 +12,7 @@ struct StubbornLink {
   void (*cb)(void *, SblDeliver *);
   void *ctx;
   list_t *outbox;
+  struct timeval next_to;
 };
 
 static void wrapper(void *ctx, FllDeliver *e) {
@@ -54,6 +56,22 @@ int sbl_send(struct StubbornLink *sbl, SblSend *e) {
   return fll_send(sbl->fair_loss_link, e);
 }
 
+void sbl_handle_timeout(struct StubbornLink *sbl) {
+  for (size_t i = 0; i < sbl->outbox->count; i++) {
+    fll_send(sbl->fair_loss_link, list_get(sbl->outbox, i));
+  }
+}
+
+void sbl_handle_fd_sets(struct StubbornLink *sbl, fd_set *reads,
+                        fd_set *writes) {
+  fll_handle_fd_sets(sbl->fair_loss_link, reads, writes);
+}
+
+int sbl_register_fd_sets(struct StubbornLink *sbl, fd_set *reads,
+                         fd_set *writes) {
+  return fll_register_fd_sets(sbl->fair_loss_link, reads, writes);
+}
+
 void sbl_consume(struct StubbornLink *sbl, struct timeval *timeout) {
   struct timeval retrans_deadline, done_deadline;
   struct timeval retrans_timeout = {.tv_sec = sbl->retransmission_period,
@@ -75,9 +93,7 @@ void sbl_consume(struct StubbornLink *sbl, struct timeval *timeout) {
     struct timeval now;
     gettimeofday(&now, NULL);
     if (timercmp(&now, &retrans_deadline, >=)) {
-      for (size_t i = 0; i < sbl->outbox->count; i++) {
-        fll_send(sbl->fair_loss_link, list_get(sbl->outbox, i));
-      }
+      sbl_handle_timeout(sbl);
       retrans_timeout.tv_sec = sbl->retransmission_period;
       retrans_timeout.tv_usec = 0;
       tv_reset_deadline(&retrans_deadline, &retrans_timeout);

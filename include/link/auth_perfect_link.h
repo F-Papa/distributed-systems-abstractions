@@ -31,4 +31,10 @@ void apl_set_callback(struct AuthPerfectLink *apl,
 
 void apl_free(struct AuthPerfectLink *apl);
 
+int apl_register_fd_sets(struct AuthPerfectLink *apl, fd_set *reads,
+                         fd_set *writes);
+
+void apl_handle_fd_sets(struct AuthPerfectLink *apl, fd_set *reads,
+                        fd_set *writes);
+
 #endif

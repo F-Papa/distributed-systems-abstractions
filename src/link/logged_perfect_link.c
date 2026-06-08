@@ -97,3 +97,13 @@ void lpl_free(struct LoggedPerfectLink *lpl) {
   list_free(lpl->deliveries);
   free(lpl);
 }
+
+int lpl_register_fd_sets(struct LoggedPerfectLink *lpl, fd_set *reads,
+                         fd_set *writes) {
+  return sbl_register_fd_sets(lpl->stubborn_link, reads, writes);
+}
+
+void lpl_handle_fd_sets(struct LoggedPerfectLink *lpl, fd_set *reads,
+                        fd_set *writes) {
+  sbl_handle_fd_sets(lpl->stubborn_link, reads, writes);
+}

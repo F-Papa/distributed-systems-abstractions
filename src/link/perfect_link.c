@@ -1,5 +1,5 @@
-#include "constants.h"
 #include "link/perfect_link.h"
+#include "constants.h"
 #include "utils/list.h"
 #include "utils/logging.h"
 #include <stddef.h>
@@ -105,4 +105,12 @@ void pl_set_callback(struct PerfectLink *pl, void (*cb)(void *, PlDeliver *),
 void pl_free(struct PerfectLink *pl) {
   sbl_free(pl->stubborn_link);
   list_free(pl->inbox);
+}
+
+void pl_handle_fd_sets(struct PerfectLink *pl, fd_set *reads, fd_set *writes) {
+  sbl_handle_fd_sets(pl->stubborn_link, reads, writes);
+}
+
+int pl_register_fd_sets(struct PerfectLink *pl, fd_set *reads, fd_set *writes) {
+  return sbl_register_fd_sets(pl->stubborn_link, reads, writes);
 }

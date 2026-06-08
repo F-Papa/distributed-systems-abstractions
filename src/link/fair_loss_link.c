@@ -1,5 +1,5 @@
-#include "constants.h"
 #include "link/fair_loss_link.h"
+#include "constants.h"
 #include "utils/list.h"
 #include "utils/logging.h"
 #include <errno.h>
@@ -79,7 +79,8 @@ struct FairLossLink *fll_init(int id, int base_port) {
   return fll;
 }
 
-struct addrinfo *get_peer_addr(const struct FairLossLink *fll, int recipient_id) {
+struct addrinfo *get_peer_addr(const struct FairLossLink *fll,
+                               int recipient_id) {
   struct addrinfo hints, *resp;
   hints.ai_family = AF_UNSPEC;
   hints.ai_socktype = SOCK_DGRAM;
@@ -122,6 +123,28 @@ void fll_set_callback(struct FairLossLink *fll,
   fll->ctx = ctx;
 }
 
+static void consume_msg(struct FairLossLink *fll) {
+  char buf[MAX_MSG_LEN];
+  int len = recvfrom(fll->socket, buf, MAX_MSG_LEN - 1, 0, NULL, NULL);
+  if (len <= 0) {
+    printf("recfrom() error (%d)\n", errno);
+    return;
+  }
+
+  buf[len] = '\0';
+  debug("Received %d bytes: %s\n", len, buf);
+  char id[10];
+  int id_len = strcspn(buf, ",");
+  strncpy(id, buf, id_len);
+
+  FllDeliver *e = calloc(1, sizeof(FllDeliver));
+  strcpy(e->msg, buf + id_len + DELIM_LEN);
+  e->sender = atoi(id);
+  debug("=====> Calling FLL Callback\n");
+  fll->callback(fll->ctx, e);
+  debug("<===== FLL Callback Returned\n");
+}
+
 void fll_consume(struct FairLossLink *fll, struct timeval *timeout) {
   int timed_out = 0;
   while (!timed_out) {
@@ -131,26 +154,17 @@ void fll_consume(struct FairLossLink *fll, struct timeval *timeout) {
       timed_out = 1;
 
     if (FD_ISSET(fll->socket, &copy)) {
-      char buf[MAX_MSG_LEN];
-      int len = recvfrom(fll->socket, buf, MAX_MSG_LEN - 1, 0, NULL, NULL);
-      if (len <= 0) {
-        printf("recfrom() error (%d)\n", errno);
-      };
-
-      buf[len] = '\0';
-      debug("Received %d bytes: %s\n", len, buf);
-      char id[10];
-      int id_len = strcspn(buf, ",");
-      strncpy(id, buf, id_len);
-
-      FllDeliver *e = calloc(1, sizeof(FllDeliver));
-      strcpy(e->msg, buf + id_len + DELIM_LEN);
-      e->sender = atoi(id);
-      debug("=====> Calling FLL Callback\n");
-      fll->callback(fll->ctx, e);
-      debug("<===== FLL Callback Returned\n");
+      consume_msg(fll);
     }
   }
+}
+
+void fll_handle_fd_sets(struct FairLossLink *fll, fd_set *reads,
+                        fd_set *writes) {
+  if (!FD_ISSET(fll->socket, reads)) {
+    return;
+  }
+  consume_msg(fll);
 }
 
 void fll_free(struct FairLossLink *fll) {
@@ -164,4 +178,10 @@ void fll_free(struct FairLossLink *fll) {
   if (_links->count == 0) {
     list_free(_links);
   }
+}
+
+int fll_register_fd_sets(struct FairLossLink *fll, fd_set *reads,
+                         fd_set *writes) {
+  FD_SET(fll->socket, reads);
+  return fll->socket;
 }
