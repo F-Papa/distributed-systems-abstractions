@@ -10,7 +10,7 @@ enum TaskStatus {
 };
 
 typedef struct Task {
-  void *handler;
+  void (*callback)(void *context);
   void *context;
   struct timeval delay;
   struct timeval deadline;
@@ -18,18 +18,16 @@ typedef struct Task {
   enum TaskStatus status;
 } task_t;
 
-inline static task_t *task_new(void *handler, void *context,
+inline static task_t *task_new(void (*callback)(void *), void *context,
                                struct timeval delay, int is_recurrent) {
   task_t *t = calloc(1, sizeof(task_t));
   if (t == NULL)
     return NULL;
 
   t->context = context;
-  t->handler = handler;
+  t->callback = callback;
   t->delay = delay;
   t->is_recurrent = is_recurrent;
   t->status = NEW;
   return t;
 }
-
-inline static void free_task(task_t *task) { free(task); }
