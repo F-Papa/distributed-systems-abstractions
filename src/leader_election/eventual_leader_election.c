@@ -235,3 +235,7 @@ void ele_free(Ele *mle) {
   fll_free(mle->fair_loss_link);
   list_free(mle->candidates);
 }
+
+wset_t *ele_get_watch_set(Ele *ele) {
+  return fll_get_watch_set(ele->fair_loss_link);
+}

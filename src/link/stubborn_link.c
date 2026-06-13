@@ -114,3 +114,7 @@ void sbl_free(struct StubbornLink *sbl) {
   list_free(sbl->outbox);
   free(sbl);
 }
+
+wset_t *sbl_get_watch_set(struct StubbornLink *sbl) {
+  return fll_get_watch_set(sbl->fair_loss_link);
+}

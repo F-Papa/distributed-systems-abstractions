@@ -2,6 +2,7 @@
 #define FAIR_LOSS_LINK_H
 
 #include "constants.h"
+#include "watch_set.h"
 #include <bits/types/struct_timeval.h>
 #include <netdb.h>
 #include <netinet/in.h>
@@ -42,4 +43,5 @@ int fll_register_fd_sets(struct FairLossLink *fll, fd_set *reads,
 void fll_handle_fd_sets(struct FairLossLink *fll, fd_set *reads,
                         fd_set *writes);
 
+wset_t *fll_get_watch_set(struct FairLossLink *fll);
 #endif

@@ -1,5 +1,6 @@
 #include "link/perfect_link.h"
 #include "constants.h"
+#include "link/stubborn_link.h"
 #include "utils/list.h"
 #include "utils/logging.h"
 #include <stddef.h>
@@ -117,4 +118,8 @@ int pl_register_fd_sets(struct PerfectLink *pl, fd_set *reads, fd_set *writes) {
 
 void pl_handle_timeout(struct PerfectLink *pl) {
   sbl_handle_timeout(pl->stubborn_link);
+}
+
+wset_t *pl_get_watch_set(struct PerfectLink *pl) {
+  return sbl_get_watch_set(pl->stubborn_link);
 }

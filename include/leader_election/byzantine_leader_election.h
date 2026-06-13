@@ -1,9 +1,10 @@
 #ifndef BYZANTINE_LEADER_ELECTION_H
 #define BYZANTINE_LEADER_ELECTION_H
 
+#include "watch_set.h"
 #include <bits/types/struct_timeval.h>
-#include <sys/select.h>
 #include <sodium.h>
+#include <sys/select.h>
 
 typedef struct ByzantineLeaderElector Ble;
 
@@ -16,7 +17,8 @@ typedef struct byzantine_complain {
   int peer_rank;
 } ByzComplain;
 
-Ble *ble_init(int rank, int base_port, int retransmission_period, int max_faulty_peers,
+Ble *ble_init(int rank, int base_port, int retransmission_period,
+              int max_faulty_peers,
               const unsigned char private_key[crypto_sign_SECRETKEYBYTES],
               int max_rank,
               const unsigned char public_keys[][crypto_sign_PUBLICKEYBYTES]);
@@ -33,5 +35,7 @@ int ble_register_fd_sets(Ble *ble, fd_set *reads, fd_set *writes);
 void ble_handle_fd_sets(Ble *ble, fd_set *reads, fd_set *writes);
 
 void ble_handle_timeout(Ble *ble);
+
+wset_t *ble_get_watch_set(Ble *ble);
 
 #endif

@@ -202,3 +202,7 @@ void pfd_free(struct PerfectFailureDetector *pfd) {
   list_free(pfd->faulty_peers);
   free(pfd);
 }
+
+wset_t *pfd_get_watch_set(struct PerfectFailureDetector *pfd) {
+  return pl_get_watch_set(pfd->perfect_link);
+}

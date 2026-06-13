@@ -1,6 +1,7 @@
 #ifndef PERFECT_FAILURE_DETECTOR_H
 #define PERFECT_FAILURE_DETECTOR_H
 
+#include "watch_set.h"
 #include <bits/types/struct_timeval.h>
 #include <sys/select.h>
 
@@ -27,5 +28,7 @@ void pfd_handle_fd_sets(struct PerfectFailureDetector *pfd, fd_set *reads,
                         fd_set *writes);
 
 void pfd_handle_timeout(struct PerfectFailureDetector *pfd);
+
+wset_t *pfd_get_watch_set(struct PerfectFailureDetector *pfd);
 
 #endif

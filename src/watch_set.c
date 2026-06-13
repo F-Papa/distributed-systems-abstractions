@@ -20,19 +20,19 @@ wset_t *watch_set_new(int *fds, int fd_count) {
   return t;
 }
 
-void watch_set_free(wset_t *trigger) { free(trigger); }
+void watch_set_free(wset_t *watch_set) { free(watch_set); }
 
-void trigger_register(wset_t *trigger, fd_set *reads, int *nfds) {
-  for (int i = 0; i < trigger->fd_count; i++) {
-    int fd = trigger->fds[i];
+void watch_set_register(wset_t *watch_set, fd_set *reads, int *nfds) {
+  for (int i = 0; i < watch_set->fd_count; i++) {
+    int fd = watch_set->fds[i];
     FD_SET(fd, reads);
     if (fd > *nfds)
       *nfds = fd;
   }
 }
 
-void watch_set_clear(wset_t *trigger, fd_set *reads) {
-  for (int i = 0; i < trigger->fd_count; i++) {
-    FD_CLR(trigger->fds[i], reads);
+void watch_set_clear(wset_t *watch_set, fd_set *reads) {
+  for (int i = 0; i < watch_set->fd_count; i++) {
+    FD_CLR(watch_set->fds[i], reads);
   }
 }

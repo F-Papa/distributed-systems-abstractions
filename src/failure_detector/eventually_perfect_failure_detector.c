@@ -216,3 +216,7 @@ void epfd_free(Epfd *epfd) {
   list_free(epfd->suspected_peers);
   free(epfd);
 }
+
+wset_t *epfd_get_watch_set(Epfd *epfd) {
+  return pl_get_watch_set(epfd->perfect_link);
+}

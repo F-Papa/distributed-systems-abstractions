@@ -33,4 +33,6 @@ void pl_handle_fd_sets(struct PerfectLink *pl, fd_set *reads, fd_set *writes);
 
 void pl_handle_timeout(struct PerfectLink *pl);
 
+wset_t *pl_get_watch_set(struct PerfectLink *pl);
+
 #endif

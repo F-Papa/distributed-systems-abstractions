@@ -1,6 +1,7 @@
 #ifndef MONARCHICAL_LEADER_ELECTION_H
 #define MONARCHICAL_LEADER_ELECTION_H
 
+#include "watch_set.h"
 #include <bits/types/struct_timeval.h>
 #include <sys/select.h>
 
@@ -24,5 +25,7 @@ int mle_register_fd_sets(Mle *mle, fd_set *reads, fd_set *writes);
 void mle_handle_fd_sets(Mle *mle, fd_set *reads, fd_set *writes);
 
 void mle_handle_timeout(Mle *mle);
+
+wset_t *mle_get_watch_set(Mle *mle);
 
 #endif

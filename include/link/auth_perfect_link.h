@@ -2,6 +2,7 @@
 #define AUTH_PERFECT_LINK_H
 
 #include "link/perfect_link.h"
+#include "watch_set.h"
 #include <sodium.h>
 
 #define SIG_HEX_LEN (crypto_sign_BYTES * 2 + 1)
@@ -38,5 +39,7 @@ void apl_handle_fd_sets(struct AuthPerfectLink *apl, fd_set *reads,
                         fd_set *writes);
 
 void apl_handle_timeout(struct AuthPerfectLink *apl);
+
+wset_t *apl_get_watch_set(struct AuthPerfectLink *apl);
 
 #endif

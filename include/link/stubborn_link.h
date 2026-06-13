@@ -28,4 +28,6 @@ void sbl_handle_fd_sets(struct StubbornLink *sbl, fd_set *reads,
 
 void sbl_handle_timeout(struct StubbornLink *sbl);
 
+wset_t *sbl_get_watch_set(struct StubbornLink *sbl);
+
 #endif

@@ -114,7 +114,8 @@ void ble_start(Ble *ble, struct timeval *timeout) {
   apl_consume(ble->auth_perfect_link, timeout);
 }
 
-Ble *ble_init(int rank, int base_port, int retransmission_period, int max_faulty_peers,
+Ble *ble_init(int rank, int base_port, int retransmission_period,
+              int max_faulty_peers,
               const unsigned char private_key[crypto_sign_SECRETKEYBYTES],
               int max_rank,
               const unsigned char public_keys[][crypto_sign_PUBLICKEYBYTES]) {
@@ -127,8 +128,8 @@ Ble *ble_init(int rank, int base_port, int retransmission_period, int max_faulty
     return NULL;
   }
 
-  Apl *apl =
-      apl_init(rank, base_port, retransmission_period, private_key, max_rank, public_keys);
+  Apl *apl = apl_init(rank, base_port, retransmission_period, private_key,
+                      max_rank, public_keys);
 
   if (apl == NULL) {
     return NULL;
@@ -154,4 +155,8 @@ Ble *ble_init(int rank, int base_port, int retransmission_period, int max_faulty
   ble->max_faulty_peers = max_faulty_peers;
   apl_set_callback(apl, ble_callback, ble);
   return ble;
+}
+
+wset_t *ble_get_watch_set(Ble *ble) {
+  return apl_get_watch_set(ble->auth_perfect_link);
 }

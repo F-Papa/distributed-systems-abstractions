@@ -59,7 +59,8 @@ static void mle_callback_on_crash(void *ctx, Crash *e) {
   mle->cb(mle->ctx, &leader);
 }
 
-Mle *mle_init(int local_rank, int max_rank, int base_port, int retransmission_period) {
+Mle *mle_init(int local_rank, int max_rank, int base_port,
+              int retransmission_period) {
   Pfd *pfd = pfd_init(local_rank, max_rank, base_port, retransmission_period);
   if (pfd == NULL) {
     return NULL;
@@ -107,4 +108,8 @@ void mle_handle_timeout(Mle *mle) {
 void mle_free(Mle *mle) {
   pfd_free(mle->perfect_failure_detector);
   list_free(mle->crashed_peers);
+}
+
+wset_t *mle_get_watch_set(Mle *mle) {
+  return pfd_get_watch_set(mle->perfect_failure_detector);
 }

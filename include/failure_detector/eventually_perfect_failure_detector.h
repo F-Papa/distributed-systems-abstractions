@@ -1,6 +1,7 @@
 #ifndef EVENTUALLY_PERFECT_FAILURE_DETECTOR_H
 #define EVENTUALLY_PERFECT_FAILURE_DETECTOR_H
 
+#include "watch_set.h"
 #include <bits/types/struct_timeval.h>
 #include <sys/select.h>
 
@@ -32,5 +33,7 @@ int epfd_register_fd_sets(Epfd *epfd, fd_set *reads, fd_set *writes);
 void epfd_handle_fd_sets(Epfd *epfd, fd_set *reads, fd_set *writes);
 
 void epfd_handle_timeout(Epfd *epfd);
+
+wset_t *epfd_get_watch_set(Epfd *epfd);
 
 #endif

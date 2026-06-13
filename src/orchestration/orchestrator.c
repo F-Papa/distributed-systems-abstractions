@@ -1,6 +1,7 @@
 #include "orchestration/orchestrator.h"
 #include "utils/list.h"
 #include "utils/timeout.h"
+#include "watch_set.h"
 #include <iso646.h>
 #include <sys/select.h>
 #include <sys/time.h>
@@ -156,4 +157,12 @@ void orchestrator_start(orch_t *orchestrator,
       }
     }
   }
+}
+
+void orchestrator_register_watch_set(orch_t *orchestrator, wset_t *watch_set) {
+  watch_set_register(watch_set, &orchestrator->reads, &orchestrator->nfds);
+}
+
+void orchestrator_clear_watch_set(orch_t *orchestrator, wset_t *watch_set) {
+  watch_set_clear(watch_set, &orchestrator->reads);
 }
