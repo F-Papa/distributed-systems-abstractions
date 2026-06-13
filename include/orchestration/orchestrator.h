@@ -1,14 +1,10 @@
 #include "orchestration/handler.h"
 #include "orchestration/task.h"
+#include "watch_set.h"
 #include <bits/types/struct_timeval.h>
 #include <iso646.h>
 #include <sys/time.h>
 #include <unistd.h>
-
-typedef enum FdEvent {
-  READ = 1 << 0,
-  WRITE = 1 << 1,
-} event_t;
 
 typedef struct Orchestrator orch_t;
 
