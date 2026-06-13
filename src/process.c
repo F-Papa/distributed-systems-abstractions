@@ -145,7 +145,9 @@ int main(int argc, char **argv) {
   struct PongContext pong_ctx = {.socket = sock, .local_rank = local_rank};
   handler_t *pong_handler = handler_new(&send_pong, &pong_ctx);
   orchestrator_add_handler(orch, pong_handler);
-  orchestrator_register_fd(orch, sock, READ);
+
+  wset_t *ws = watch_set_new(&sock, 1);
+  orchestrator_register_watch_set(orch, ws);
 
   struct timeval timeout = {10, 0};
   orchestrator_start(orch, &timeout);
