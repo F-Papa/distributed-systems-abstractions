@@ -1,4 +1,6 @@
 #include "orchestration/orchestrator.h"
+#include "handler_internal.h"
+#include "task_internal.h"
 #include "utils/list.h"
 #include "utils/timeout.h"
 #include "watch_set.h"

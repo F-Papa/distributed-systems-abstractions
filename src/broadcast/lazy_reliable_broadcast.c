@@ -2,6 +2,7 @@
 #include "constants.h"
 #include "failure_detector/perfect_failure_detector.h"
 #include "link/perfect_link.h"
+#include "orchestration/handler.h"
 #include "utils/list.h"
 #include "utils/parsing.h"
 #include "utils/timeout.h"
@@ -304,5 +305,15 @@ wset_t *rb_get_watch_set(Rb *rb) {
   return rb_ws;
 }
 
-// Handler.Union?
-handler_t *rb_get_handler(Rb *rb);
+handler_t *rb_get_handler(Rb *rb) {
+  handler_t *handlers[] = {
+      pl_get_handler(rb->perfect_link),
+      pfd_get_handler(rb->perfect_failure_detector),
+  };
+  handler_t *rb_handler = handler_composite_new(handlers, 2);
+
+  handler_free(handlers[0]);
+  handler_free(handlers[1]);
+
+  return rb_handler;
+}

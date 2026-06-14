@@ -143,5 +143,5 @@ wset_t *apl_get_watch_set(struct AuthPerfectLink *apl) {
 }
 
 handler_t *apl_get_handler(struct AuthPerfectLink *apl) {
-  return apl_get_handler(apl);
+  return pl_get_handler(apl->perfect_link);
 }
