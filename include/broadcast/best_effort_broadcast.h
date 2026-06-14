@@ -2,6 +2,8 @@
 #define BEST_EFFORT_BROADCAST_H
 
 #include "constants.h"
+#include "orchestration/handler.h"
+#include "watch_set.h"
 #include <bits/types/struct_timeval.h>
 #include <sys/select.h>
 
@@ -32,5 +34,9 @@ int beb_register_fd_sets(Beb *beb, fd_set *reads, fd_set *writes);
 void beb_handle_fd_sets(Beb *beb, fd_set *reads, fd_set *writes);
 
 void beb_handle_timeout(Beb *beb);
+
+wset_t *beb_get_watch_set(Beb *beb);
+
+handler_t *beb_get_handler(Beb *beb);
 
 #endif

@@ -1,5 +1,7 @@
-#include "constants.h"
 #include "link/logged_perfect_link.h"
+#include "constants.h"
+#include "orchestration/handler.h"
+#include "watch_set.h"
 #include <stdlib.h>
 #include <string.h>
 #include <uuid.h>
@@ -110,4 +112,12 @@ void lpl_handle_fd_sets(struct LoggedPerfectLink *lpl, fd_set *reads,
 
 void lpl_handle_timeout(struct LoggedPerfectLink *lpl) {
   sbl_handle_timeout(lpl->stubborn_link);
+}
+
+wset_t *lpl_get_watch_set(struct LoggedPerfectLink *lpl) {
+  return sbl_get_watch_set(lpl->stubborn_link);
+}
+
+handler_t *lpl_get_handler(struct LoggedPerfectLink *lpl) {
+  return sbl_get_handler(lpl->stubborn_link);
 }

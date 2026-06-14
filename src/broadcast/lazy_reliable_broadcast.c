@@ -293,3 +293,9 @@ void rb_free(Rb *rb) {
     list_free(rb->history[peer_rank - 1]);
   }
 }
+
+// WatchSet.Union?
+wset_t *rb_get_watch_set(Rb *rb) {}
+
+// Handler.Union?
+handler_t *rb_get_handler(Rb *rb);

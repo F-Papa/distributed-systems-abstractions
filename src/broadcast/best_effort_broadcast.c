@@ -77,3 +77,11 @@ void beb_free(Beb *beb) {
   pl_free(beb->perfect_link);
   free(beb);
 }
+
+wset_t *beb_get_watch_set(Beb *beb) {
+  return pl_get_watch_set(beb->perfect_link);
+}
+
+handler_t *beb_get_handler(Beb *beb) {
+  return pl_get_handler(beb->perfect_link);
+}

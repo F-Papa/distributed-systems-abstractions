@@ -1,5 +1,6 @@
 #include "leader_election/monarchical_leader_election.h"
 #include "failure_detector/perfect_failure_detector.h"
+#include "orchestration/handler.h"
 #include "utils/list.h"
 #include "utils/logging.h"
 #include <bits/types/struct_timeval.h>
@@ -112,4 +113,8 @@ void mle_free(Mle *mle) {
 
 wset_t *mle_get_watch_set(Mle *mle) {
   return pfd_get_watch_set(mle->perfect_failure_detector);
+}
+
+handler_t *mle_get_handler(Mle *mle) {
+  return pfd_get_handler(mle->perfect_failure_detector);
 }

@@ -35,4 +35,6 @@ void pl_handle_timeout(struct PerfectLink *pl);
 
 wset_t *pl_get_watch_set(struct PerfectLink *pl);
 
+handler_t *pl_get_handler(struct PerfectLink *pl);
+
 #endif

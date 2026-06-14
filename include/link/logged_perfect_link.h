@@ -40,4 +40,8 @@ void lpl_handle_fd_sets(struct LoggedPerfectLink *lpl, fd_set *reads,
 
 void lpl_handle_timeout(struct LoggedPerfectLink *lpl);
 
+wset_t *lpl_get_watch_set(struct LoggedPerfectLink *lpl);
+
+handler_t *lpl_get_handler(struct LoggedPerfectLink *lpl);
+
 #endif

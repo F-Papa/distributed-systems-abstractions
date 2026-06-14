@@ -206,3 +206,7 @@ void pfd_free(struct PerfectFailureDetector *pfd) {
 wset_t *pfd_get_watch_set(struct PerfectFailureDetector *pfd) {
   return pl_get_watch_set(pfd->perfect_link);
 }
+
+handler_t *pfd_get_handler(Pfd *pfd) {
+  return pl_get_handler(pfd->perfect_link);
+}

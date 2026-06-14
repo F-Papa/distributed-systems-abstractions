@@ -1,6 +1,7 @@
 #include "link/auth_perfect_link.h"
 #include "constants.h"
 #include "link/perfect_link.h"
+#include "orchestration/handler.h"
 #include "utils/logging.h"
 #include <stdlib.h>
 #include <string.h>
@@ -139,4 +140,8 @@ void apl_handle_timeout(struct AuthPerfectLink *apl) {
 
 wset_t *apl_get_watch_set(struct AuthPerfectLink *apl) {
   return pl_get_watch_set(apl->perfect_link);
+}
+
+handler_t *apl_get_handler(struct AuthPerfectLink *apl) {
+  return apl_get_handler(apl);
 }

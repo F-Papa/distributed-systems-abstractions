@@ -123,3 +123,7 @@ void pl_handle_timeout(struct PerfectLink *pl) {
 wset_t *pl_get_watch_set(struct PerfectLink *pl) {
   return sbl_get_watch_set(pl->stubborn_link);
 }
+
+handler_t *pl_get_handler(struct PerfectLink *pl) {
+  return sbl_get_handler(pl->stubborn_link);
+}

@@ -1,6 +1,7 @@
 #include "failure_detector/eventually_perfect_failure_detector.h"
 #include "constants.h"
 #include "link/perfect_link.h"
+#include "orchestration/handler.h"
 #include "utils/list.h"
 #include "utils/parsing.h"
 #include "utils/timeout.h"
@@ -219,4 +220,8 @@ void epfd_free(Epfd *epfd) {
 
 wset_t *epfd_get_watch_set(Epfd *epfd) {
   return pl_get_watch_set(epfd->perfect_link);
+}
+
+handler_t *epfd_get_handler(Epfd *epfd) {
+  return pl_get_handler(epfd->perfect_link);
 }

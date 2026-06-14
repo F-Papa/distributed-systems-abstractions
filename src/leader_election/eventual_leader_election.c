@@ -239,3 +239,7 @@ void ele_free(Ele *mle) {
 wset_t *ele_get_watch_set(Ele *ele) {
   return fll_get_watch_set(ele->fair_loss_link);
 }
+
+handler_t *ele_get_handler(Ele *ele) {
+  return fll_get_handler(ele->fair_loss_link);
+}

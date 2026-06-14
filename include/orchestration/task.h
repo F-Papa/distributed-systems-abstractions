@@ -1,3 +1,5 @@
+#ifndef TASK_H
+#define TASK_H
 
 #include <bits/types/struct_timeval.h>
 #include <stdlib.h>
@@ -31,3 +33,5 @@ inline static task_t *task_new(void (*callback)(void *), void *context,
   t->status = NEW;
   return t;
 }
+
+#endif

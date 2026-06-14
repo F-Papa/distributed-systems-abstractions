@@ -1,8 +1,8 @@
 #include "link/stubborn_link.h"
 #include "link/fair_loss_link.h"
+#include "orchestration/orchestrator.h"
 #include "utils/list.h"
 #include "utils/logging.h"
-#include "utils/timeout.h"
 #include <stdio.h>
 #include <unistd.h>
 
@@ -73,34 +73,18 @@ int sbl_register_fd_sets(struct StubbornLink *sbl, fd_set *reads,
 }
 
 void sbl_consume(struct StubbornLink *sbl, struct timeval *timeout) {
-  struct timeval retrans_deadline, done_deadline;
-  struct timeval retrans_timeout = {.tv_sec = sbl->retransmission_period,
-                                    .tv_usec = 0};
+  orch_t *orch = orchestrator_new();
 
-  tv_reset_deadline(&retrans_deadline, &retrans_timeout);
+  struct timeval delta = {.tv_sec = sbl->retransmission_period, .tv_usec = 0};
+  task_t *retranmission = task_new((void *)&sbl_handle_timeout, sbl, delta, 1);
+  orchestrator_add_task(orch, retranmission);
 
-  if (timeout) {
-    gettimeofday(&done_deadline, NULL);
-    timeradd(&done_deadline, timeout, &done_deadline);
-  }
-
-  int done = 0;
-  while (!done) {
-    struct timeval *min_to = tv_min(&retrans_timeout, timeout);
-
-    fll_consume(sbl->fair_loss_link, min_to);
-
-    struct timeval now;
-    gettimeofday(&now, NULL);
-    if (timercmp(&now, &retrans_deadline, >=)) {
-      sbl_handle_timeout(sbl);
-      retrans_timeout.tv_sec = sbl->retransmission_period;
-      retrans_timeout.tv_usec = 0;
-      tv_reset_deadline(&retrans_deadline, &retrans_timeout);
-    }
-
-    done = timeout && timercmp(&now, &done_deadline, >=);
-  }
+  wset_t *watch_set = fll_get_watch_set(sbl->fair_loss_link);
+  orchestrator_register_watch_set(orch, watch_set);
+  free(watch_set);
+  handler_t *fll_handler = fll_get_handler(sbl->fair_loss_link);
+  orchestrator_add_handler(orch, fll_handler);
+  orchestrator_start(orch, timeout);
 }
 
 void sbl_set_callback(struct StubbornLink *sbl,
@@ -117,4 +101,8 @@ void sbl_free(struct StubbornLink *sbl) {
 
 wset_t *sbl_get_watch_set(struct StubbornLink *sbl) {
   return fll_get_watch_set(sbl->fair_loss_link);
+}
+
+handler_t *sbl_get_handler(struct StubbornLink *sbl) {
+  return fll_get_handler(sbl->fair_loss_link);
 }

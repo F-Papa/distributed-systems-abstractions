@@ -42,4 +42,6 @@ void apl_handle_timeout(struct AuthPerfectLink *apl);
 
 wset_t *apl_get_watch_set(struct AuthPerfectLink *apl);
 
+handler_t *apl_get_handler(struct AuthPerfectLink *apl);
+
 #endif

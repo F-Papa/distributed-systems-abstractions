@@ -1,5 +1,6 @@
 #include "link/fair_loss_link.h"
 #include "constants.h"
+#include "orchestration/handler.h"
 #include "utils/list.h"
 #include "utils/logging.h"
 #include <errno.h>
@@ -188,4 +189,16 @@ void fll_handle_fd_sets(struct FairLossLink *fll, fd_set *reads,
     return;
   }
   consume_msg(fll);
+}
+
+static void handler_callback(fd_set *reads, fd_set *writes, void *ctx) {
+  struct FairLossLink *fll = ctx;
+  if (!FD_ISSET(fll->socket, reads))
+    return;
+
+  consume_msg(fll);
+}
+
+handler_t *fll_get_handler(struct FairLossLink *fll) {
+  return handler_new(&handler_callback, fll);
 }

@@ -1,3 +1,5 @@
+#ifndef HANDLER_H
+#define HANDLER_H
 
 #include <bits/types/struct_timeval.h>
 #include <stdlib.h>
@@ -19,3 +21,5 @@ handler_new(void (*callback)(fd_set *, fd_set *, void *), void *context) {
   t->callback = callback;
   return t;
 }
+
+#endif // !HANDLER_H

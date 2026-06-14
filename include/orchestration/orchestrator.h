@@ -1,3 +1,6 @@
+#ifndef ORCHESTRATOR_H
+#define ORCHESTRATOR_H
+
 #include "orchestration/handler.h"
 #include "orchestration/task.h"
 #include "watch_set.h"
@@ -25,3 +28,5 @@ void orchestrator_unregister_fd(orch_t *orchestrator, int fd, event_t event);
 void orchestrator_register_watch_set(orch_t *orchestrator, wset_t *watch_set);
 
 void orchestrator_clear_watch_set(orch_t *orchestrator, wset_t *watch_set);
+
+#endif

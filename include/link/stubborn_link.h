@@ -30,4 +30,6 @@ void sbl_handle_timeout(struct StubbornLink *sbl);
 
 wset_t *sbl_get_watch_set(struct StubbornLink *sbl);
 
+handler_t *sbl_get_handler(struct StubbornLink *sbl);
+
 #endif

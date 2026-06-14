@@ -1,6 +1,7 @@
 #ifndef BYZANTINE_LEADER_ELECTION_H
 #define BYZANTINE_LEADER_ELECTION_H
 
+#include "orchestration/handler.h"
 #include "watch_set.h"
 #include <bits/types/struct_timeval.h>
 #include <sodium.h>
@@ -37,5 +38,7 @@ void ble_handle_fd_sets(Ble *ble, fd_set *reads, fd_set *writes);
 void ble_handle_timeout(Ble *ble);
 
 wset_t *ble_get_watch_set(Ble *ble);
+
+handler_t *ble_get_handler(Ble *ble);
 
 #endif

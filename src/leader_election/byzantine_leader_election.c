@@ -160,3 +160,7 @@ Ble *ble_init(int rank, int base_port, int retransmission_period,
 wset_t *ble_get_watch_set(Ble *ble) {
   return apl_get_watch_set(ble->auth_perfect_link);
 }
+
+handler_t *ble_get_handler(Ble *ble) {
+  return apl_get_handler(ble->auth_perfect_link);
+}

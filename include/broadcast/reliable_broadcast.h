@@ -2,6 +2,8 @@
 #define RELIABLE_BROADCAST_H
 
 #include "constants.h"
+#include "orchestration/handler.h"
+#include "watch_set.h"
 #include <bits/types/struct_timeval.h>
 #include <sys/select.h>
 
@@ -42,5 +44,9 @@ void rb_consume(Rb *rb, struct timeval *timeout);
 void rb_handle_timeout(Rb *rb);
 
 void rb_start(Rb *rb);
+
+wset_t *rb_get_watch_set(Rb *rb);
+
+handler_t *rb_get_handler(Rb *rb);
 
 #endif

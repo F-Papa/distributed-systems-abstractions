@@ -1,6 +1,7 @@
 #ifndef EVENTUAL_LEADER_ELECTION_H
 #define EVENTUAL_LEADER_ELECTION_H
 
+#include "orchestration/handler.h"
 #include "watch_set.h"
 #include <bits/types/struct_timeval.h>
 #include <sys/select.h>
@@ -27,5 +28,7 @@ void ele_handle_fd_sets(Ele *ele, fd_set *reads, fd_set *writes);
 void ele_handle_timeout(Ele *ele);
 
 wset_t *ele_get_watch_set(Ele *ele);
+
+handler_t *ele_get_handler(Ele *ele);
 
 #endif
