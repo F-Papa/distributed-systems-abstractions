@@ -29,10 +29,6 @@ typedef struct reliable_broadcast_config {
 
 Rb *rb_init(RbConfig config);
 
-void rb_handle_fd_sets(Rb *rb, fd_set *reads, fd_set *writes);
-
-int rb_register_fd_sets(Rb *rb, fd_set *reads, fd_set *writes);
-
 int rb_broadcast(Rb *rb, RbSend *e);
 
 void rb_set_callback(Rb *rb, void (*cb)(void *, RbDelivery *), void *ctx);

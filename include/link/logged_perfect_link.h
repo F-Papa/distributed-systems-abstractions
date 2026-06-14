@@ -32,12 +32,6 @@ void lpl_set_callback(struct LoggedPerfectLink *lpl,
 
 void lpl_free(struct LoggedPerfectLink *lpl);
 
-int lpl_register_fd_sets(struct LoggedPerfectLink *lpl, fd_set *reads,
-                         fd_set *writes);
-
-void lpl_handle_fd_sets(struct LoggedPerfectLink *lpl, fd_set *reads,
-                        fd_set *writes);
-
 void lpl_handle_timeout(struct LoggedPerfectLink *lpl);
 
 wset_t *lpl_get_watch_set(struct LoggedPerfectLink *lpl);

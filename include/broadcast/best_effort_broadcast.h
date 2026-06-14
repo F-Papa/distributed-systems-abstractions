@@ -29,10 +29,6 @@ void beb_set_callback(Beb *beb, void (*cb)(void *, BebDelivery *), void *ctx);
 
 void beb_free(Beb *beb);
 
-int beb_register_fd_sets(Beb *beb, fd_set *reads, fd_set *writes);
-
-void beb_handle_fd_sets(Beb *beb, fd_set *reads, fd_set *writes);
-
 void beb_handle_timeout(Beb *beb);
 
 wset_t *beb_get_watch_set(Beb *beb);

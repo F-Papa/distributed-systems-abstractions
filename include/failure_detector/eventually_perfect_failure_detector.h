@@ -29,10 +29,6 @@ void epfd_start(Epfd *, struct timeval *timeout);
 
 void epfd_free(Epfd *epfd);
 
-int epfd_register_fd_sets(Epfd *epfd, fd_set *reads, fd_set *writes);
-
-void epfd_handle_fd_sets(Epfd *epfd, fd_set *reads, fd_set *writes);
-
 void epfd_handle_timeout(Epfd *epfd);
 
 wset_t *epfd_get_watch_set(Epfd *epfd);

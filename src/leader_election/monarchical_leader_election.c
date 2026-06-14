@@ -94,14 +94,6 @@ void mle_start(Mle *mle, struct timeval *timeout) {
   pfd_start(mle->perfect_failure_detector, timeout);
 }
 
-int mle_register_fd_sets(Mle *mle, fd_set *reads, fd_set *writes) {
-  return pfd_register_fd_sets(mle->perfect_failure_detector, reads, writes);
-}
-
-void mle_handle_fd_sets(Mle *mle, fd_set *reads, fd_set *writes) {
-  pfd_handle_fd_sets(mle->perfect_failure_detector, reads, writes);
-}
-
 void mle_handle_timeout(Mle *mle) {
   pfd_handle_timeout(mle->perfect_failure_detector);
 }

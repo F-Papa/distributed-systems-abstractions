@@ -108,14 +108,6 @@ void pl_free(struct PerfectLink *pl) {
   list_free(pl->inbox);
 }
 
-void pl_handle_fd_sets(struct PerfectLink *pl, fd_set *reads, fd_set *writes) {
-  sbl_handle_fd_sets(pl->stubborn_link, reads, writes);
-}
-
-int pl_register_fd_sets(struct PerfectLink *pl, fd_set *reads, fd_set *writes) {
-  return sbl_register_fd_sets(pl->stubborn_link, reads, writes);
-}
-
 void pl_handle_timeout(struct PerfectLink *pl) {
   sbl_handle_timeout(pl->stubborn_link);
 }

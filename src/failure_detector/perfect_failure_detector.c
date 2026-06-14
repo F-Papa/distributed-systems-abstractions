@@ -73,16 +73,6 @@ void pfd_handle_timeout(Pfd *pfd) {
   }
 }
 
-int pfd_register_fd_sets(struct PerfectFailureDetector *pfd, fd_set *reads,
-                         fd_set *writes) {
-  return pl_register_fd_sets(pfd->perfect_link, reads, writes);
-}
-
-void pfd_handle_fd_sets(struct PerfectFailureDetector *pfd, fd_set *reads,
-                        fd_set *writes) {
-  pl_handle_fd_sets(pfd->perfect_link, reads, writes);
-}
-
 static void pfd_callback(void *ctx, PlDeliver *e) {
   struct PerfectFailureDetector *pfd = ctx;
   char msg[MAX_MSG_LEN];

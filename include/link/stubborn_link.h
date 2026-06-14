@@ -20,12 +20,6 @@ void sbl_set_callback(struct StubbornLink *sbl,
 
 void sbl_free(struct StubbornLink *sbl);
 
-int sbl_register_fd_sets(struct StubbornLink *sbl, fd_set *reads,
-                         fd_set *writes);
-
-void sbl_handle_fd_sets(struct StubbornLink *sbl, fd_set *reads,
-                        fd_set *writes);
-
 void sbl_handle_timeout(struct StubbornLink *sbl);
 
 wset_t *sbl_get_watch_set(struct StubbornLink *sbl);

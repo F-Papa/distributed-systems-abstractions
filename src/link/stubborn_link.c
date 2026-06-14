@@ -62,16 +62,6 @@ void sbl_handle_timeout(struct StubbornLink *sbl) {
   }
 }
 
-void sbl_handle_fd_sets(struct StubbornLink *sbl, fd_set *reads,
-                        fd_set *writes) {
-  fll_handle_fd_sets(sbl->fair_loss_link, reads, writes);
-}
-
-int sbl_register_fd_sets(struct StubbornLink *sbl, fd_set *reads,
-                         fd_set *writes) {
-  return fll_register_fd_sets(sbl->fair_loss_link, reads, writes);
-}
-
 void sbl_consume(struct StubbornLink *sbl, struct timeval *timeout) {
   orch_t *orch = orchestrator_new();
 

@@ -56,14 +56,6 @@ static void pfd_callback(void *ctx, PlDeliver *e) {
   }
 }
 
-int epfd_register_fd_sets(Epfd *epfd, fd_set *reads, fd_set *writes) {
-  return pl_register_fd_sets(epfd->perfect_link, reads, writes);
-}
-
-void epfd_handle_fd_sets(Epfd *epfd, fd_set *reads, fd_set *writes) {
-  pl_handle_fd_sets(epfd->perfect_link, reads, writes);
-}
-
 void epfd_handle_timeout(Epfd *epfd) {
   for (size_t peer_rank = 1; peer_rank <= epfd->max_rank; peer_rank++) {
     if (peer_rank == epfd->local_rank)

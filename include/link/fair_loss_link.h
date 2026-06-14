@@ -38,12 +38,6 @@ void fll_consume(struct FairLossLink *fll, struct timeval *timeout);
 
 void fll_free(struct FairLossLink *fll);
 
-int fll_register_fd_sets(struct FairLossLink *fll, fd_set *reads,
-                         fd_set *writes);
-
-void fll_handle_fd_sets(struct FairLossLink *fll, fd_set *reads,
-                        fd_set *writes);
-
 wset_t *fll_get_watch_set(struct FairLossLink *fll);
 
 handler_t *fll_get_handler(struct FairLossLink *fll);

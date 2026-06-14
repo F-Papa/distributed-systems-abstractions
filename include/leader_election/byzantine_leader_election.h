@@ -31,10 +31,6 @@ void ble_start(Ble *ble, struct timeval *timeout);
 
 void ble_free(Ble *ble);
 
-int ble_register_fd_sets(Ble *ble, fd_set *reads, fd_set *writes);
-
-void ble_handle_fd_sets(Ble *ble, fd_set *reads, fd_set *writes);
-
 void ble_handle_timeout(Ble *ble);
 
 wset_t *ble_get_watch_set(Ble *ble);

@@ -21,10 +21,6 @@ Mle *mle_init(int local_rank, int max_rank, int base_port,
 
 void mle_free(Mle *mle);
 
-int mle_register_fd_sets(Mle *mle, fd_set *reads, fd_set *writes);
-
-void mle_handle_fd_sets(Mle *mle, fd_set *reads, fd_set *writes);
-
 void mle_handle_timeout(Mle *mle);
 
 wset_t *mle_get_watch_set(Mle *mle);

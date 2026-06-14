@@ -135,14 +135,6 @@ void ele_set_on_new_trust(Ele *ele, void (*cb)(void *, Trust *), void *ctx) {
   ele->ctx = ctx;
 }
 
-int ele_register_fd_sets(Ele *ele, fd_set *reads, fd_set *writes) {
-  return fll_register_fd_sets(ele->fair_loss_link, reads, writes);
-}
-
-void ele_handle_fd_sets(Ele *ele, fd_set *reads, fd_set *writes) {
-  fll_handle_fd_sets(ele->fair_loss_link, reads, writes);
-}
-
 void ele_handle_timeout(Ele *ele) {
   debug("Timer done\n");
   Heartbeat best_candidate = {.base = {.sender = ele->local_rank},

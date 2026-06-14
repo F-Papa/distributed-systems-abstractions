@@ -22,12 +22,6 @@ void pfd_start(struct PerfectFailureDetector *pfd, struct timeval *timeout);
 
 void pfd_free(struct PerfectFailureDetector *pfd);
 
-int pfd_register_fd_sets(struct PerfectFailureDetector *pfd, fd_set *reads,
-                         fd_set *writes);
-
-void pfd_handle_fd_sets(struct PerfectFailureDetector *pfd, fd_set *reads,
-                        fd_set *writes);
-
 void pfd_handle_timeout(struct PerfectFailureDetector *pfd);
 
 wset_t *pfd_get_watch_set(struct PerfectFailureDetector *pfd);

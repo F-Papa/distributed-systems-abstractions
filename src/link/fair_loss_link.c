@@ -177,14 +177,14 @@ wset_t *fll_get_watch_set(struct FairLossLink *fll) {
   return watch_set_new(&fll->socket, 1);
 }
 
-int fll_register_fd_sets(struct FairLossLink *fll, fd_set *reads,
-                         fd_set *writes) {
+static int fll_register_fd_sets(struct FairLossLink *fll, fd_set *reads,
+                                fd_set *writes) {
   FD_SET(fll->socket, reads);
   return fll->socket;
 }
 
-void fll_handle_fd_sets(struct FairLossLink *fll, fd_set *reads,
-                        fd_set *writes) {
+static void fll_handle_fd_sets(struct FairLossLink *fll, fd_set *reads,
+                               fd_set *writes) {
   if (!FD_ISSET(fll->socket, reads)) {
     return;
   }

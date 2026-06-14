@@ -63,14 +63,6 @@ void beb_set_callback(Beb *beb, void (*cb)(void *, BebDelivery *), void *ctx) {
   beb->ctx = ctx;
 }
 
-int beb_register_fd_sets(Beb *beb, fd_set *reads, fd_set *writes) {
-  return pl_register_fd_sets(beb->perfect_link, reads, writes);
-}
-
-void beb_handle_fd_sets(Beb *beb, fd_set *reads, fd_set *writes) {
-  pl_handle_fd_sets(beb->perfect_link, reads, writes);
-}
-
 void beb_handle_timeout(Beb *beb) { pl_handle_timeout(beb->perfect_link); }
 
 void beb_free(Beb *beb) {

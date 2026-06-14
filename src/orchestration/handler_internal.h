@@ -1,6 +1,7 @@
 #ifndef HANDLER_INTERNAL_H
 #define HANDLER_INTERNAL_H
 
+#include <stdbool.h>
 #include "orchestration/handler.h"
 
 struct Handler {

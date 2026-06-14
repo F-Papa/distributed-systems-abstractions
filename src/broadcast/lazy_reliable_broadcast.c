@@ -3,6 +3,7 @@
 #include "failure_detector/perfect_failure_detector.h"
 #include "link/perfect_link.h"
 #include "orchestration/handler.h"
+#include "orchestration/orchestrator.h"
 #include "utils/list.h"
 #include "utils/parsing.h"
 #include "utils/timeout.h"
@@ -44,85 +45,30 @@ void rb_start(Rb *rb) {
   reset_data_deadline(rb);
 }
 
-int rb_register_fd_sets(Rb *rb, fd_set *reads, fd_set *writes) {
-  int max_pl_fd = pl_register_fd_sets(rb->perfect_link, reads, writes);
-  int max_pfd_fd =
-      pfd_register_fd_sets(rb->perfect_failure_detector, reads, writes);
-
-  return max_pl_fd > max_pfd_fd ? max_pl_fd : max_pfd_fd;
-}
-
-void rb_handle_fd_sets(Rb *rb, fd_set *reads, fd_set *writes) {
-  pl_handle_fd_sets(rb->perfect_link, reads, writes);
-  pfd_handle_fd_sets(rb->perfect_failure_detector, reads, writes);
-}
-
-void rb_handle_timeout(Rb *rb) {
-  struct timeval now;
-  gettimeofday(&now, NULL);
-
-  if (timercmp(&now, &rb->control_deadline, >=)) {
-    pfd_handle_timeout(rb->perfect_failure_detector);
-    reset_control_deadline(rb);
-  }
-  if (timercmp(&now, &rb->data_deadline, >=)) {
-    pl_handle_timeout(rb->perfect_link);
-    reset_data_deadline(rb);
-  }
-}
-
 void rb_consume(Rb *rb, struct timeval *external_timeout) {
-  struct timeval external_deadline = {0, 0};
+  orch_t *orch = orchestrator_new();
 
-  if (rb->control_deadline.tv_sec == 0 && rb->control_deadline.tv_usec == 0) {
-    reset_control_deadline(rb);
-  }
+  wset_t *ws = rb_get_watch_set(rb);
+  orchestrator_register_watch_set(orch, ws);
+  watch_set_free(ws);
 
-  if (rb->data_deadline.tv_sec == 0 && rb->data_deadline.tv_usec == 0) {
-    reset_data_deadline(rb);
-  }
+  handler_t *h = rb_get_handler(rb);
+  orchestrator_add_handler(orch, h);
 
-  if (external_timeout) {
-    gettimeofday(&external_deadline, NULL);
-    timeradd(&external_deadline, external_timeout, &external_deadline);
-  }
+  struct timeval control_period = {
+      .tv_sec = rb->config.control_retransmission_period, .tv_usec = 0};
+  task_t *ctrl =
+      task_new((void *)&pfd_handle_timeout, rb->perfect_failure_detector,
+               control_period, 1);
+  orchestrator_add_task(orch, ctrl);
 
-  fd_set reads, writes;
-  FD_ZERO(&reads);
-  FD_ZERO(&writes);
-  int max_fd = rb_register_fd_sets(rb, &reads, &writes);
+  struct timeval data_period = {
+      .tv_sec = rb->config.data_retransmission_period, .tv_usec = 0};
+  task_t *data = task_new((void *)&pl_handle_timeout, rb->perfect_link,
+                          data_period, 1);
+  orchestrator_add_task(orch, data);
 
-  while (1) {
-    struct timeval now;
-    gettimeofday(&now, NULL);
-
-    if (external_timeout && timercmp(&now, &external_deadline, >=)) {
-      break;
-    }
-
-    struct timeval pfd_timeout, pl_timeout;
-    timersub(&rb->control_deadline, &now, &pfd_timeout);
-    timersub(&rb->data_deadline, &now, &pl_timeout);
-
-    struct timeval *next_timeout = tv_min(&pfd_timeout, &pl_timeout);
-
-    if (external_timeout) {
-      next_timeout = tv_min(next_timeout, external_timeout);
-    }
-
-    fd_set reads_copy = reads, writes_copy = writes;
-
-    int fds_set =
-        select(max_fd + 1, &reads_copy, &writes_copy, NULL, next_timeout);
-
-    if (fds_set > 0) {
-      pfd_handle_fd_sets(rb->perfect_failure_detector, &reads_copy,
-                         &writes_copy);
-      pl_handle_fd_sets(rb->perfect_link, &reads_copy, &writes_copy);
-    } else {
-      rb_handle_timeout(rb);
-    }
-  }
+  orchestrator_start(orch, external_timeout);
 }
 
 static int rb_broadcast_aux(Rb *rb, char *content, char *original_id,

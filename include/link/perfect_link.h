@@ -27,10 +27,6 @@ void pl_set_callback(struct PerfectLink *pl, void (*cb)(void *, PlDeliver *e),
 
 void pl_free(struct PerfectLink *pl);
 
-int pl_register_fd_sets(struct PerfectLink *pl, fd_set *reads, fd_set *writes);
-
-void pl_handle_fd_sets(struct PerfectLink *pl, fd_set *reads, fd_set *writes);
-
 void pl_handle_timeout(struct PerfectLink *pl);
 
 wset_t *pl_get_watch_set(struct PerfectLink *pl);
