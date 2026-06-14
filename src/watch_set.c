@@ -7,6 +7,20 @@ struct WatchSet {
   int fds[];
 };
 
+wset_t *watch_set_union(wset_t *ws1, wset_t *ws2) {
+  int fds[ws1->fd_count + ws2->fd_count];
+  int fd_count = ws1->fd_count + ws2->fd_count;
+
+  int i, j;
+  for (i = 0; i < ws1->fd_count; i++) {
+    fds[i] = ws1->fds[i];
+  }
+  for (j = 0; j < ws2->fd_count; j++) {
+    fds[i + j] = ws2->fds[j];
+  }
+  return watch_set_new(fds, fd_count);
+}
+
 wset_t *watch_set_new(int *fds, int fd_count) {
   wset_t *t = calloc(1, sizeof(wset_t));
   if (t == NULL)

@@ -9,6 +9,8 @@ typedef enum FdEvent {
   WRITE = 1 << 1,
 } event_t;
 
+wset_t *watch_set_union(wset_t *ws1, wset_t *ws2);
+
 wset_t *watch_set_new(int *fds, int fd_count);
 
 void watch_set_free(wset_t *w_set);

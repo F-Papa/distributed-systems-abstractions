@@ -5,6 +5,7 @@
 #include "utils/list.h"
 #include "utils/parsing.h"
 #include "utils/timeout.h"
+#include "watch_set.h"
 #include <iso646.h>
 #include <string.h>
 #include <sys/select.h>
@@ -294,8 +295,14 @@ void rb_free(Rb *rb) {
   }
 }
 
-// WatchSet.Union?
-wset_t *rb_get_watch_set(Rb *rb) {}
+wset_t *rb_get_watch_set(Rb *rb) {
+  wset_t *pfd_ws = pfd_get_watch_set(rb->perfect_failure_detector);
+  wset_t *pl_ws = pl_get_watch_set(rb->perfect_link);
+  wset_t *rb_ws = watch_set_union(pfd_ws, pl_ws);
+  watch_set_free(pfd_ws);
+  watch_set_free(pl_ws);
+  return rb_ws;
+}
 
 // Handler.Union?
 handler_t *rb_get_handler(Rb *rb);
