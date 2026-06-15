@@ -56,6 +56,8 @@ void pfd_handle_timeout(Pfd *pfd) {
       }
     }
 
+    debug("Peer %d status (is_alive: %d, is_faulty: %d)\n", is_alive,
+          is_faulty);
     if (!is_alive && !is_faulty) {
       int *peer_rank_cpy = calloc(1, sizeof(int));
       *peer_rank_cpy = peer_rank;
@@ -171,10 +173,11 @@ Pfd *pfd_init(int local_rank, int max_rank, int base_port,
   pfd->alive_peers = alive_peers;
   pfd->faulty_peers = faulty_peers;
 
-  for (int i = 1; i < max_rank; i++) {
+  for (int i = 1; i <= max_rank; i++) {
     if (i == local_rank)
       continue;
     int *peer_rank = calloc(1, sizeof(int));
+    *peer_rank = i;
     list_add(pfd->alive_peers, peer_rank);
   }
   return pfd;
