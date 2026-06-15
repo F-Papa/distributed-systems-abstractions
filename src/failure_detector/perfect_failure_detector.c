@@ -203,3 +203,15 @@ wset_t *pfd_get_watch_set(struct PerfectFailureDetector *pfd) {
 handler_t *pfd_get_handler(Pfd *pfd) {
   return pl_get_handler(pfd->perfect_link);
 }
+
+task_t **pfd_get_tasks(Pfd *pfd, int *count) {
+  task_t **tasks = calloc(1, sizeof(task_t *));
+  if (tasks == NULL) {
+    *count = 0;
+    return NULL;
+  }
+  struct timeval delta = {.tv_sec = HEALTHCHECK_INTERVAL_SEC, .tv_usec = 0};
+  tasks[0] = task_new((void *)&pfd_handle_timeout, pfd, delta, 1);
+  *count = 1;
+  return tasks;
+}

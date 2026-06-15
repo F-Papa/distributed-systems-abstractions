@@ -2,6 +2,7 @@
 #define BYZANTINE_LEADER_ELECTION_H
 
 #include "orchestration/handler.h"
+#include "orchestration/task.h"
 #include "watch_set.h"
 #include <bits/types/struct_timeval.h>
 #include <sodium.h>
@@ -36,5 +37,7 @@ void ble_handle_timeout(Ble *ble);
 wset_t *ble_get_watch_set(Ble *ble);
 
 handler_t *ble_get_handler(Ble *ble);
+
+task_t **ble_get_tasks(Ble *ble, int *count);
 
 #endif

@@ -3,6 +3,7 @@
 
 #include "constants.h"
 #include "link/stubborn_link.h"
+#include "orchestration/task.h"
 #include "utils/list.h"
 
 typedef struct {
@@ -37,5 +38,7 @@ void lpl_handle_timeout(struct LoggedPerfectLink *lpl);
 wset_t *lpl_get_watch_set(struct LoggedPerfectLink *lpl);
 
 handler_t *lpl_get_handler(struct LoggedPerfectLink *lpl);
+
+task_t **lpl_get_tasks(struct LoggedPerfectLink *lpl, int *count);
 
 #endif

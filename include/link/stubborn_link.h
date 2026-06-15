@@ -2,6 +2,7 @@
 #define STUBBORN_LINK_H
 
 #include "link/fair_loss_link.h"
+#include "orchestration/task.h"
 #include <sys/time.h>
 
 typedef FllSend SblSend;
@@ -25,5 +26,7 @@ void sbl_handle_timeout(struct StubbornLink *sbl);
 wset_t *sbl_get_watch_set(struct StubbornLink *sbl);
 
 handler_t *sbl_get_handler(struct StubbornLink *sbl);
+
+task_t **sbl_get_tasks(struct StubbornLink *sbl, int *count);
 
 #endif

@@ -2,6 +2,7 @@
 #define EVENTUALLY_PERFECT_FAILURE_DETECTOR_H
 
 #include "orchestration/handler.h"
+#include "orchestration/task.h"
 #include "watch_set.h"
 #include <bits/types/struct_timeval.h>
 #include <sys/select.h>
@@ -34,5 +35,7 @@ void epfd_handle_timeout(Epfd *epfd);
 wset_t *epfd_get_watch_set(Epfd *epfd);
 
 handler_t *epfd_get_handler(Epfd *epfd);
+
+task_t **epfd_get_tasks(Epfd *epfd, int *count);
 
 #endif

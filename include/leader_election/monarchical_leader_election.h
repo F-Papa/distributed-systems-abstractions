@@ -2,6 +2,7 @@
 #define MONARCHICAL_LEADER_ELECTION_H
 
 #include "orchestration/handler.h"
+#include "orchestration/task.h"
 #include "watch_set.h"
 #include <bits/types/struct_timeval.h>
 #include <sys/select.h>
@@ -26,5 +27,7 @@ void mle_handle_timeout(Mle *mle);
 wset_t *mle_get_watch_set(Mle *mle);
 
 handler_t *mle_get_handler(Mle *mle);
+
+task_t **mle_get_tasks(Mle *mle, int *count);
 
 #endif

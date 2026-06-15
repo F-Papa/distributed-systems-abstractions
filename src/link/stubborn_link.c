@@ -96,3 +96,15 @@ wset_t *sbl_get_watch_set(struct StubbornLink *sbl) {
 handler_t *sbl_get_handler(struct StubbornLink *sbl) {
   return fll_get_handler(sbl->fair_loss_link);
 }
+
+task_t **sbl_get_tasks(struct StubbornLink *sbl, int *count) {
+  task_t **tasks = calloc(1, sizeof(task_t *));
+  if (tasks == NULL) {
+    *count = 0;
+    return NULL;
+  }
+  struct timeval delta = {.tv_sec = sbl->retransmission_period, .tv_usec = 0};
+  tasks[0] = task_new((void *)&sbl_handle_timeout, sbl, delta, 1);
+  *count = 1;
+  return tasks;
+}

@@ -3,6 +3,7 @@
 
 #include "constants.h"
 #include "orchestration/handler.h"
+#include "orchestration/task.h"
 #include "watch_set.h"
 #include <bits/types/struct_timeval.h>
 #include <sys/select.h>
@@ -34,5 +35,7 @@ void beb_handle_timeout(Beb *beb);
 wset_t *beb_get_watch_set(Beb *beb);
 
 handler_t *beb_get_handler(Beb *beb);
+
+task_t **beb_get_tasks(Beb *beb, int *count);
 
 #endif

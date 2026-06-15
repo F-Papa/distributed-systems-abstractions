@@ -156,3 +156,7 @@ wset_t *ble_get_watch_set(Ble *ble) {
 handler_t *ble_get_handler(Ble *ble) {
   return apl_get_handler(ble->auth_perfect_link);
 }
+
+task_t **ble_get_tasks(Ble *ble, int *count) {
+  return apl_get_tasks(ble->auth_perfect_link, count);
+}

@@ -5,6 +5,7 @@
 #include "orchestration/handler.h"
 #include "orchestration/orchestrator.h"
 #include "utils/list.h"
+#include "utils/logging.h"
 #include "utils/parsing.h"
 #include "utils/timeout.h"
 #include "watch_set.h"

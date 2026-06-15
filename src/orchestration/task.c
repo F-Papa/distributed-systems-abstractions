@@ -14,3 +14,11 @@ task_t *task_new(void (*callback)(void *), void *context, struct timeval delay,
   t->status = NEW;
   return t;
 }
+
+void task_run(task_t *task) {
+  task->callback(task->context);
+}
+
+void task_free(task_t *task) {
+  free(task);
+}

@@ -235,3 +235,15 @@ wset_t *ele_get_watch_set(Ele *ele) {
 handler_t *ele_get_handler(Ele *ele) {
   return fll_get_handler(ele->fair_loss_link);
 }
+
+task_t **ele_get_tasks(Ele *ele, int *count) {
+  task_t **tasks = calloc(1, sizeof(task_t *));
+  if (tasks == NULL) {
+    *count = 0;
+    return NULL;
+  }
+  struct timeval delta = {.tv_sec = ele->period_duration_secs, .tv_usec = 0};
+  tasks[0] = task_new((void *)&ele_handle_timeout, ele, delta, 1);
+  *count = 1;
+  return tasks;
+}

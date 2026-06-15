@@ -110,3 +110,7 @@ wset_t *mle_get_watch_set(Mle *mle) {
 handler_t *mle_get_handler(Mle *mle) {
   return pfd_get_handler(mle->perfect_failure_detector);
 }
+
+task_t **mle_get_tasks(Mle *mle, int *count) {
+  return pfd_get_tasks(mle->perfect_failure_detector, count);
+}

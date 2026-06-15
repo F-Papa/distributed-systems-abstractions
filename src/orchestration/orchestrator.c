@@ -154,7 +154,7 @@ void orchestrator_start(orch_t *orchestrator,
         task_t *task = list_get(orchestrator->tasks, i);
 
         if (task->status != DONE && timercmp(&now, &task->deadline, >=)) {
-          task->callback(task->context);
+          task_run(task);
 
           if (task->is_recurrent == 1) {
             tv_reset_deadline(&task->deadline, &task->delay);

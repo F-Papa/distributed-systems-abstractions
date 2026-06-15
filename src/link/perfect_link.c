@@ -119,3 +119,7 @@ wset_t *pl_get_watch_set(struct PerfectLink *pl) {
 handler_t *pl_get_handler(struct PerfectLink *pl) {
   return sbl_get_handler(pl->stubborn_link);
 }
+
+task_t **pl_get_tasks(struct PerfectLink *pl, int *count) {
+  return sbl_get_tasks(pl->stubborn_link, count);
+}

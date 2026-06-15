@@ -135,3 +135,7 @@ wset_t *apl_get_watch_set(struct AuthPerfectLink *apl) {
 handler_t *apl_get_handler(struct AuthPerfectLink *apl) {
   return pl_get_handler(apl->perfect_link);
 }
+
+task_t **apl_get_tasks(struct AuthPerfectLink *apl, int *count) {
+  return pl_get_tasks(apl->perfect_link, count);
+}

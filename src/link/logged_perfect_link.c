@@ -111,3 +111,7 @@ wset_t *lpl_get_watch_set(struct LoggedPerfectLink *lpl) {
 handler_t *lpl_get_handler(struct LoggedPerfectLink *lpl) {
   return sbl_get_handler(lpl->stubborn_link);
 }
+
+task_t **lpl_get_tasks(struct LoggedPerfectLink *lpl, int *count) {
+  return sbl_get_tasks(lpl->stubborn_link, count);
+}

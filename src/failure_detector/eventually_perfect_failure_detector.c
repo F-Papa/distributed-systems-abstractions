@@ -217,3 +217,15 @@ wset_t *epfd_get_watch_set(Epfd *epfd) {
 handler_t *epfd_get_handler(Epfd *epfd) {
   return pl_get_handler(epfd->perfect_link);
 }
+
+task_t **epfd_get_tasks(Epfd *epfd, int *count) {
+  task_t **tasks = calloc(1, sizeof(task_t *));
+  if (tasks == NULL) {
+    *count = 0;
+    return NULL;
+  }
+  struct timeval delta = {.tv_sec = HEALTHCHECK_INTERVAL_SEC, .tv_usec = 0};
+  tasks[0] = task_new((void *)&epfd_handle_timeout, epfd, delta, 1);
+  *count = 1;
+  return tasks;
+}

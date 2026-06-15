@@ -77,3 +77,7 @@ wset_t *beb_get_watch_set(Beb *beb) {
 handler_t *beb_get_handler(Beb *beb) {
   return pl_get_handler(beb->perfect_link);
 }
+
+task_t **beb_get_tasks(Beb *beb, int *count) {
+  return pl_get_tasks(beb->perfect_link, count);
+}

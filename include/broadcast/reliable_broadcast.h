@@ -3,6 +3,7 @@
 
 #include "constants.h"
 #include "orchestration/handler.h"
+#include "orchestration/task.h"
 #include "watch_set.h"
 #include <bits/types/struct_timeval.h>
 #include <sys/select.h>
@@ -44,5 +45,7 @@ void rb_start(Rb *rb);
 wset_t *rb_get_watch_set(Rb *rb);
 
 handler_t *rb_get_handler(Rb *rb);
+
+task_t **rb_get_tasks(Rb *rb, int *count);
 
 #endif
