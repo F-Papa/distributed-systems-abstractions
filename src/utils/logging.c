@@ -2,7 +2,7 @@
 #include "stdarg.h"
 #include "stdio.h"
 
-// #define DEBUG 1
+// #define DEBUG DEBUG
 
 void debug(const char *format, ...) {
 #ifdef DEBUG

@@ -58,15 +58,14 @@ void rb_consume(Rb *rb, struct timeval *external_timeout) {
 
   struct timeval control_period = {
       .tv_sec = rb->config.control_retransmission_period, .tv_usec = 0};
-  task_t *ctrl =
-      task_new((void *)&pfd_handle_timeout, rb->perfect_failure_detector,
-               control_period, 1);
+  task_t *ctrl = task_new((void *)&pfd_handle_timeout,
+                          rb->perfect_failure_detector, control_period, 1);
   orchestrator_add_task(orch, ctrl);
 
-  struct timeval data_period = {
-      .tv_sec = rb->config.data_retransmission_period, .tv_usec = 0};
-  task_t *data = task_new((void *)&pl_handle_timeout, rb->perfect_link,
-                          data_period, 1);
+  struct timeval data_period = {.tv_sec = rb->config.data_retransmission_period,
+                                .tv_usec = 0};
+  task_t *data =
+      task_new((void *)&pl_handle_timeout, rb->perfect_link, data_period, 1);
   orchestrator_add_task(orch, data);
 
   orchestrator_start(orch, external_timeout);
@@ -74,11 +73,23 @@ void rb_consume(Rb *rb, struct timeval *external_timeout) {
 
 static int rb_broadcast_aux(Rb *rb, char *content, char *original_id,
                             int original_sender) {
+
+  int is_original_copy = original_id == NULL;
+  int was_first_id_generated = 0;
+
+  if (is_original_copy)
+    original_id = "NULL";
+
   PlSend msg;
   snprintf(msg.base.msg, MAX_MSG_LEN, "BC,%d,%s,%s", original_sender,
            original_id, content);
 
   for (int peer_rank = 1; peer_rank <= rb->config.max_rank; peer_rank++) {
+    if (is_original_copy && peer_rank > 1 && !was_first_id_generated) {
+      was_first_id_generated = 1;
+      snprintf(msg.base.msg, MAX_MSG_LEN, "BC,%d,%s,%s", original_sender,
+               msg.id, content);
+    }
     msg.base.recipient = peer_rank;
     int status = pl_send(rb->perfect_link, &msg);
     if (status != 0)
@@ -89,17 +100,24 @@ static int rb_broadcast_aux(Rb *rb, char *content, char *original_id,
 }
 
 void on_crashed(void *ctx, Crash *e) {
+  printf("\t\tPeer %d crashed. Retransmitting messages...\n", e->peer_id);
   Rb *rb = ctx;
+
   list_t *peer_history = rb->history[e->peer_id - 1];
   for (int i = 0; i < peer_history->count; i++) {
     struct SavedMessage *msg = list_get(peer_history, i);
+    printf("Retransmitting: %s\n", msg->msg);
     rb_broadcast_aux(rb, msg->msg, msg->id, e->peer_id);
   }
+  printf("Done retransmitting %ld messages from %d\n", peer_history->count,
+         e->peer_id);
 }
 
 void on_delivery_wrapper(void *ctx, PlDeliver *e) {
   Rb *rb = ctx;
   char buf[MAX_MSG_LEN];
+
+  debug("PlDeliver [%s] from %d: %s\n", e->id, e->base.sender, e->base.msg);
 
   if (try_parse_message(e->base.msg, "BC", buf, MAX_MSG_LEN) == 0) {
     RbDelivery delivery;
@@ -128,14 +146,21 @@ void on_delivery_wrapper(void *ctx, PlDeliver *e) {
     delivery.sender = parsed_og_sender;
 
     if (parsed_og_sender == rb->config.local_rank) {
-      rb->cb(rb->ctx, &delivery);
+      if (e->base.sender == rb->config.local_rank) {
+        rb->cb(rb->ctx, &delivery);
+      }
       return;
     }
 
     list_t *history_from_peer = rb->history[parsed_og_sender - 1];
+    debug("Checking history from og_sender (%d):\n", parsed_og_sender);
     for (int i = 0; i < history_from_peer->count; i++) {
       struct SavedMessage *saved_msg = list_get(history_from_peer, i);
-      if (strcmp(saved_msg->id, e->id) == 0) {
+      debug("\t-id: %s | og_id: %s | saved_id: %s\n", e->id, original_msg_id,
+            saved_msg->id);
+      if (strcmp(saved_msg->id, e->id) == 0 ||
+          strcmp(saved_msg->id, original_msg_id) == 0) {
+        printf("Dup message: %s\n", e->base.msg);
         return;
       }
     }
@@ -159,7 +184,7 @@ void on_delivery_wrapper(void *ctx, PlDeliver *e) {
 }
 
 int rb_broadcast(Rb *rb, RbSend *e) {
-  return rb_broadcast_aux(rb, e->msg, "NULL", rb->config.local_rank);
+  return rb_broadcast_aux(rb, e->msg, NULL, rb->config.local_rank);
 }
 
 Rb *rb_init(RbConfig config) {
@@ -263,4 +288,27 @@ handler_t *rb_get_handler(Rb *rb) {
   handler_free(handlers[1]);
 
   return rb_handler;
+}
+
+task_t **rb_get_tasks(Rb *rb, int *count) {
+  int c1, c2;
+  task_t **t1 = pl_get_tasks(rb->perfect_link, &c1);
+  task_t **t2 = pfd_get_tasks(rb->perfect_failure_detector, &c2);
+  task_t **merged = calloc(c1 + c2, sizeof(task_t *));
+  if (merged == NULL) {
+    for (int i = 0; i < c1; i++)
+      task_free(t1[i]);
+    for (int i = 0; i < c2; i++)
+      task_free(t2[i]);
+    free(t1);
+    free(t2);
+    *count = 0;
+    return NULL;
+  }
+  memcpy(merged, t1, c1 * sizeof(task_t *));
+  memcpy(merged + c1, t2, c2 * sizeof(task_t *));
+  free(t1);
+  free(t2);
+  *count = c1 + c2;
+  return merged;
 }
