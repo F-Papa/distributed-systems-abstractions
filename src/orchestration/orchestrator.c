@@ -99,10 +99,12 @@ orchestrator_get_next_deadline(orch_t *orchestrator,
     if (next_deadline == NULL || timercmp(&task->deadline, next_deadline, <)) {
       next_deadline = &task->deadline;
     }
+  }
 
-    if (external_deadline) {
-      next_deadline = tv_min(next_deadline, external_deadline);
-    }
+  if (external_deadline) {
+    next_deadline = next_deadline == NULL
+                        ? external_deadline
+                        : tv_min(next_deadline, external_deadline);
   }
 
   return next_deadline;
@@ -123,9 +125,11 @@ void orchestrator_start(orch_t *orchestrator,
     struct timeval *next_deadline =
         orchestrator_get_next_deadline(orchestrator, &external_deadline);
 
-    // TODO: Dont wait for timeout if no tasks are scheduled
-    if (next_deadline == NULL)
+    // TODO: Dont wait for timeout if no tasks are scheduled nor handlers
+    // registered
+    if (next_deadline == NULL && orchestrator->handlers->count == 0) {
       return;
+    }
 
     struct timeval timeout;
     tv_time_to_deadline(next_deadline, &timeout);
