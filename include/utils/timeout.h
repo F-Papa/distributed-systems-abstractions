@@ -14,10 +14,16 @@ static inline void tv_reset_deadline(struct timeval *deadline,
   timeradd(deadline, timeout, deadline);
 }
 
+// NOTE: If deadline is in the past, it returns {0,0}
 static inline void tv_time_to_deadline(struct timeval *deadline,
                                        struct timeval *time) {
   gettimeofday(time, NULL);
-  timersub(deadline, time, time);
+  if (timercmp(time, deadline, >=)) {
+    time->tv_usec = 0;
+    time->tv_sec = 0;
+  } else {
+    timersub(deadline, time, time);
+  }
 }
 
 #endif

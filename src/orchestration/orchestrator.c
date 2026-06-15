@@ -2,11 +2,13 @@
 #include "handler_internal.h"
 #include "task_internal.h"
 #include "utils/list.h"
+#include "utils/logging.h"
 #include "utils/timeout.h"
 #include "watch_set.h"
 #include <iso646.h>
 #include <sys/select.h>
 #include <sys/time.h>
+#include <time.h>
 
 struct Orchestrator {
   list_t *tasks;
@@ -137,8 +139,14 @@ void orchestrator_start(orch_t *orchestrator,
     fd_set reads_cpy = orchestrator->reads;
     fd_set writes_cpy = orchestrator->writes;
 
-    if (select(orchestrator->nfds + 1, &reads_cpy, &writes_cpy, NULL,
-               &timeout) == 0) {
+    debug("Orchestrator entering select with timeout {%ld, %ld}\n",
+          timeout.tv_sec, timeout.tv_usec);
+
+    int select_status =
+        select(orchestrator->nfds + 1, &reads_cpy, &writes_cpy, NULL, &timeout);
+    debug("Select status: %d\n", select_status);
+
+    if (select_status == 0) {
       struct timeval now;
       gettimeofday(&now, NULL);
 
