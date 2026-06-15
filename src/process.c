@@ -1,33 +1,85 @@
-#include "link/stubborn_link.h"
+#include "broadcast/reliable_broadcast.h"
+#include "constants.h"
+#include "orchestration/handler.h"
+#include "orchestration/orchestrator.h"
 #include "syscall.h"
+#include "watch_set.h"
 #include <bits/types/struct_timeval.h>
 #include <netdb.h>
 #include <netinet/in.h>
 #include <stdio.h>
+#include <stdlib.h>
 #include <string.h>
 #include <sys/select.h>
 #include <unistd.h>
 
 #define BASE_PORT 3000
 
-void callback(void *ctx, SblDeliver *delivery) {
-  printf("%s\n", delivery->msg);
+void callback(void *ctx, RbDelivery *delivery) {
+  printf("[Peer %d] %s\n", delivery->sender, delivery->msg);
+}
+
+void handle_stdin(fd_set *reads, fd_set *writes, void *ctx) {
+  if (FD_ISSET(STDIN_FILENO, reads)) {
+    char buf[MAX_MSG_LEN];
+    if (read(STDIN_FILENO, buf, MAX_MSG_LEN) <= 0) {
+      printf("Error reading from STDIN\n");
+      return;
+    }
+
+    char *new_line = strpbrk(buf, "\n");
+    *new_line = '\0';
+    Rb *rb = ctx;
+    RbSend s = {};
+    strcpy(s.msg, buf);
+    rb_broadcast(rb, &s);
+  }
 }
 
 int main(int argc, char **argv) {
-  printf("Initializing...\n");
   int local_rank = atoi(argv[1]);
   int max_rank = atoi(argv[2]);
-  printf("Local Rank: %d, Max Rank: %d\n", local_rank, max_rank);
 
-  struct StubbornLink *stubborn_link = sbl_init(local_rank, BASE_PORT, 3);
-  SblSend s = {.recipient = local_rank == 1 ? 2 : 1, .msg = "Hello my friend!"};
-  sbl_set_callback(stubborn_link, &callback, NULL);
-  sbl_send(stubborn_link, &s);
+  orch_t *orchestrator = orchestrator_new();
 
-  struct timeval timeout = {.tv_sec = 10, .tv_usec = 0};
-  sbl_consume(stubborn_link, &timeout);
-  sbl_free(stubborn_link);
+  RbConfig config = {
+      .control_base_port = 4000,
+      .control_retransmission_period = 5,
+      .data_base_port = BASE_PORT,
+      .data_retransmission_period = 3,
+      .local_rank = local_rank,
+      .max_rank = max_rank,
+  };
+  Rb *rb = rb_init(config);
+  wset_t *rb_wset = rb_get_watch_set(rb);
+  orchestrator_register_watch_set(orchestrator, rb_wset);
+  watch_set_free(rb_wset);
+  handler_t *rb_handler = rb_get_handler(rb);
+  orchestrator_add_handler(orchestrator, rb_handler);
+  rb_set_callback(rb, &callback, NULL);
+  int task_count;
+  task_t **rb_tasks = rb_get_tasks(rb, &task_count);
+  for (int i = 0; i < task_count; i++)
+    orchestrator_add_task(orchestrator, rb_tasks[i]);
+  free(rb_tasks);
 
+  int fds[] = {STDIN_FILENO};
+  wset_t *w_set = watch_set_new(fds, 1);
+  orchestrator_register_watch_set(orchestrator, w_set);
+  watch_set_free(w_set);
+  handler_t *stdin_handler = handler_new(&handle_stdin, rb);
+  orchestrator_add_handler(orchestrator, stdin_handler);
+
+  struct timeval timeout = {60, 0};
+  printf("Starting peer %d/%d ...\n", local_rank, max_rank);
+  sleep(3);
+  printf("Started...\n");
+  orchestrator_start(orchestrator, &timeout);
+
+  handler_free(stdin_handler);
+  handler_free(rb_handler);
+
+  orchestrator_free(orchestrator);
+  printf("Exiting\n");
   return 0;
 }
