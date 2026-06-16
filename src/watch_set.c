@@ -22,7 +22,7 @@ wset_t *watch_set_union(wset_t *ws1, wset_t *ws2) {
 }
 
 wset_t *watch_set_new(int *fds, int fd_count) {
-  wset_t *t = calloc(1, sizeof(wset_t));
+  wset_t *t = calloc(1, sizeof(wset_t) + sizeof(int) * fd_count);
   if (t == NULL)
     return NULL;
 

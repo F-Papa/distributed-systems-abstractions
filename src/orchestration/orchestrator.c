@@ -68,6 +68,7 @@ void orchestrator_unregister_fd(orch_t *orchestrator, int fd, event_t event) {
 
 void orchestrator_free(orch_t *orchestrator) {
   list_free(orchestrator->tasks);
+  free(orchestrator->handlers);
   free(orchestrator);
 }
 

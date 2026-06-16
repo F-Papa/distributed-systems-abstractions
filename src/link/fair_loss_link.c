@@ -4,6 +4,7 @@
 #include "utils/list.h"
 #include "utils/logging.h"
 #include <errno.h>
+#include <netdb.h>
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
@@ -109,12 +110,13 @@ int fll_send(struct FairLossLink *fll, FllSend *e) {
   if (sendto(fll->socket, buf, len, 0, target_addr->ai_addr,
              target_addr->ai_addrlen) <= 0) {
     printf("sendto() error (%d)\n", errno);
+    freeaddrinfo(target_addr);
     return -1;
   };
 
   debug("Sent %d bytes to %d: %s\n", len, e->recipient, buf);
 
-  free(target_addr);
+  freeaddrinfo(target_addr);
   return 0;
 }
 
@@ -143,6 +145,7 @@ static void consume_msg(struct FairLossLink *fll) {
   e->sender = atoi(id);
   debug("=====> Calling FLL Callback\n");
   fll->callback(fll->ctx, e);
+  free(e);
   debug("<===== FLL Callback Returned\n");
 }
 

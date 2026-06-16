@@ -41,13 +41,13 @@ static void wrapper(void *ctx, SblDeliver *e) {
 
   for (size_t i = 0; i < pl->inbox->count; i++) {
     if (*(unsigned long *)list_get(pl->inbox, i) == *hash) {
+      free(hash);
       return;
     }
   }
 
   int offset = id_len + DELIM_LEN;
-
-  for (size_t i = 0; i < strlen(e->msg) - DELIM_LEN; i++) {
+  for (size_t i = 0; i <= strlen(e->msg) - offset; i++) {
     e->msg[i] = e->msg[i + offset];
   }
 

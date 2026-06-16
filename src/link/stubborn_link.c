@@ -57,9 +57,13 @@ int sbl_send(struct StubbornLink *sbl, SblSend *e) {
 }
 
 void sbl_handle_timeout(struct StubbornLink *sbl) {
+  debug("SBL Retransmisison Began\n");
   for (size_t i = 0; i < sbl->outbox->count; i++) {
-    fll_send(sbl->fair_loss_link, list_get(sbl->outbox, i));
+    SblSend *msg = list_get(sbl->outbox, i);
+    debug("Msg %d/%d: %s\n", i + 1, sbl->outbox->count, msg->msg);
+    fll_send(sbl->fair_loss_link, msg);
   }
+  debug("SBL Retransmisison Done\n");
 }
 
 void sbl_consume(struct StubbornLink *sbl, struct timeval *timeout) {

@@ -1,5 +1,13 @@
-CFLAGS = -Iinclude -I/usr/include/uuid -Wall -Wextra
-LDLIBS = -luuid -lsodium
+CC = gcc
+
+SAN = -g -O1 -fsanitize=address,undefined -fno-omit-frame-pointer
+
+CFLAGS = -Iinclude -I/usr/include/uuid \
+         -Wall -Wextra \
+         $(SAN)
+
+LDLIBS = -luuid -lsodium $(SAN)
+
 SRCS = $(shell find src -name "*.c")
 OBJS = $(SRCS:.c=.o)
 

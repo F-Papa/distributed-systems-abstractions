@@ -1,5 +1,6 @@
 #include "broadcast/best_effort_broadcast.h"
 #include "link/perfect_link.h"
+#include "utils/logging.h"
 #include <stdlib.h>
 #include <string.h>
 
@@ -12,10 +13,12 @@ struct BestEffortBroadcast {
 };
 
 static void wrapper(void *ctx, PlDeliver *e) {
+  debug("Calling BEB Callback\n");
   BebDelivery delivery = {.sender = e->base.sender};
   strncpy(delivery.msg, e->base.msg, MAX_MSG_LEN);
   Beb *beb = ctx;
   beb->cb(beb->ctx, &delivery);
+  debug("BEB Returned\n");
 }
 
 Beb *beb_init(int local_rank, int max_rank, int base_port,
