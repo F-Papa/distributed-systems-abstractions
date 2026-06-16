@@ -1,4 +1,5 @@
 #include "broadcast/reliable_broadcast.h"
+#include "broadcast/uniform_reliable_broadcast.h"
 #include "constants.h"
 #include "orchestration/handler.h"
 #include "orchestration/orchestrator.h"
@@ -29,10 +30,10 @@ void handle_stdin(fd_set *reads, fd_set *writes, void *ctx) {
 
     char *new_line = strpbrk(buf, "\n");
     *new_line = '\0';
-    Rb *rb = ctx;
+    Urb *urb = ctx;
     RbSend s = {};
     strcpy(s.msg, buf);
-    rb_broadcast(rb, &s);
+    urb_broadcast(urb, &s);
   }
 }
 
@@ -42,23 +43,22 @@ int main(int argc, char **argv) {
 
   orch_t *orchestrator = orchestrator_new();
 
-  RbConfig config = {
-      .control_base_port = 4000,
-      .control_retransmission_period = 5,
-      .data_base_port = BASE_PORT,
-      .data_retransmission_period = 3,
+  UrbConfig config = {
       .local_rank = local_rank,
       .max_rank = max_rank,
+      .base_port = BASE_PORT,
+      .retransmission_period = 3,
   };
-  Rb *rb = rb_init(config);
-  wset_t *rb_wset = rb_get_watch_set(rb);
+
+  Urb *urb = urb_init(config);
+  wset_t *rb_wset = urb_get_watch_set(urb);
   orchestrator_register_watch_set(orchestrator, rb_wset);
   watch_set_free(rb_wset);
-  handler_t *rb_handler = rb_get_handler(rb);
+  handler_t *rb_handler = urb_get_handler(urb);
   orchestrator_add_handler(orchestrator, rb_handler);
-  rb_set_callback(rb, &callback, NULL);
+  urb_set_callback(urb, &callback, NULL);
   int task_count;
-  task_t **rb_tasks = rb_get_tasks(rb, &task_count);
+  task_t **rb_tasks = urb_get_tasks(urb, &task_count);
   for (int i = 0; i < task_count; i++)
     orchestrator_add_task(orchestrator, rb_tasks[i]);
   free(rb_tasks);
@@ -67,12 +67,12 @@ int main(int argc, char **argv) {
   wset_t *w_set = watch_set_new(fds, 1);
   orchestrator_register_watch_set(orchestrator, w_set);
   watch_set_free(w_set);
-  handler_t *stdin_handler = handler_new(&handle_stdin, rb);
+  handler_t *stdin_handler = handler_new(&handle_stdin, urb);
   orchestrator_add_handler(orchestrator, stdin_handler);
 
   struct timeval timeout = {60, 0};
   printf("Starting peer %d/%d ...\n", local_rank, max_rank);
-  sleep(3);
+  // sleep(3);
   printf("Started...\n");
   orchestrator_start(orchestrator, &timeout);
 
