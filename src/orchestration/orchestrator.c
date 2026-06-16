@@ -32,7 +32,7 @@ orch_t *orchestrator_new() {
 
   list_t *handlers = list_init();
   if (handlers == NULL) {
-    list_free(tasks);
+    list_free(tasks, NULL);
     free(o);
     return NULL;
   }
@@ -67,8 +67,8 @@ void orchestrator_unregister_fd(orch_t *orchestrator, int fd, event_t event) {
 }
 
 void orchestrator_free(orch_t *orchestrator) {
-  list_free(orchestrator->tasks);
-  free(orchestrator->handlers);
+  list_free(orchestrator->tasks, NULL);
+  list_free(orchestrator->handlers, (void *)&handler_free);
   free(orchestrator);
 }
 

@@ -153,7 +153,7 @@ Urb *urb_init(UrbConfig config) {
   Urb *urb = calloc(1, sizeof(Urb));
   if (urb == NULL) {
     beb_free(urb->best_effort_broadcast);
-    list_free(received);
+    list_free(received, NULL);
     return NULL;
   }
 
@@ -176,7 +176,7 @@ void urb_set_callback(Urb *urb, void (*cb)(void *, RbDelivery *), void *ctx) {
 
 void urb_free(Urb *urb) {
   beb_free(urb->best_effort_broadcast);
-  list_free(urb->received);
+  list_free(urb->received, NULL);
   free(urb);
 }
 

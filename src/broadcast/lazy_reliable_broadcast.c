@@ -218,7 +218,7 @@ Rb *rb_init(RbConfig config) {
       for (int i = 1; i < peer_rank; i++) {
         if (i == config.local_rank)
           continue;
-        list_free(peer_history[i - 1]);
+        list_free(peer_history[i - 1], NULL);
       }
 
       return NULL;
@@ -234,7 +234,7 @@ Rb *rb_init(RbConfig config) {
     for (int peer_rank = 1; peer_rank <= config.max_rank; peer_rank++) {
       if (peer_rank == config.local_rank)
         continue;
-      list_free(peer_history[peer_rank - 1]);
+      list_free(peer_history[peer_rank - 1], NULL);
     }
     return NULL;
   }
@@ -264,7 +264,7 @@ void rb_free(Rb *rb) {
   for (int peer_rank = 1; peer_rank <= rb->config.max_rank; peer_rank++) {
     if (peer_rank == rb->config.local_rank)
       continue;
-    list_free(rb->history[peer_rank - 1]);
+    list_free(rb->history[peer_rank - 1], NULL);
   }
 }
 

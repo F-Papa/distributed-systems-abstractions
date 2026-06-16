@@ -70,14 +70,11 @@ int main(int argc, char **argv) {
   handler_t *stdin_handler = handler_new(&handle_stdin, urb);
   orchestrator_add_handler(orchestrator, stdin_handler);
 
-  struct timeval timeout = {60, 0};
+  struct timeval timeout = {10, 0};
   printf("Starting peer %d/%d ...\n", local_rank, max_rank);
   // sleep(3);
   printf("Started...\n");
   orchestrator_start(orchestrator, &timeout);
-
-  handler_free(stdin_handler);
-  handler_free(rb_handler);
 
   orchestrator_free(orchestrator);
   printf("Exiting\n");

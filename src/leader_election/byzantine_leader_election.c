@@ -95,7 +95,7 @@ void ble_handle_timeout(Ble *ble) {
 }
 
 void ble_free(Ble *ble) {
-  list_free(ble->complains);
+  list_free(ble->complains, NULL);
   apl_free(ble->auth_perfect_link);
   free(ble);
 }
@@ -136,7 +136,7 @@ Ble *ble_init(int rank, int base_port, int retransmission_period,
   Ble *ble = calloc(1, sizeof(Ble));
   if (ble == NULL) {
     apl_free(apl);
-    list_free(complains);
+    list_free(complains, NULL);
     return NULL;
   }
 

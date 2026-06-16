@@ -162,15 +162,15 @@ Epfd *epfd_init(int local_rank, int max_rank, int base_port,
   list_t *suspected_peers = list_init();
   if (suspected_peers == NULL) {
     pl_free(pl);
-    list_free(alive_peers);
+    list_free(alive_peers, NULL);
     return NULL;
   }
 
   Epfd *epfd = calloc(1, sizeof(Epfd) + max_rank * sizeof(int));
   if (epfd == NULL) {
     pl_free(pl);
-    list_free(alive_peers);
-    list_free(suspected_peers);
+    list_free(alive_peers, NULL);
+    list_free(suspected_peers, NULL);
     return NULL;
   }
 
@@ -205,8 +205,8 @@ void epfd_set_on_restore(Epfd *epfd, void (*cb)(void *ctx, Restore *e),
 
 void epfd_free(Epfd *epfd) {
   pl_free(epfd->perfect_link);
-  list_free(epfd->alive_peers);
-  list_free(epfd->suspected_peers);
+  list_free(epfd->alive_peers, NULL);
+  list_free(epfd->suspected_peers, NULL);
   free(epfd);
 }
 

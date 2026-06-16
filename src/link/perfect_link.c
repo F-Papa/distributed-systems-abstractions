@@ -72,7 +72,7 @@ struct PerfectLink *pl_init(int id, int base_port, int retransmission_period) {
   struct PerfectLink *pl = calloc(1, sizeof(struct PerfectLink));
   if (pl == NULL) {
     sbl_free(sbl);
-    list_free(inbox);
+    list_free(inbox, NULL);
     return NULL;
   }
 
@@ -105,7 +105,7 @@ void pl_set_callback(struct PerfectLink *pl, void (*cb)(void *, PlDeliver *),
 
 void pl_free(struct PerfectLink *pl) {
   sbl_free(pl->stubborn_link);
-  list_free(pl->inbox);
+  list_free(pl->inbox, NULL);
 }
 
 void pl_handle_timeout(struct PerfectLink *pl) {

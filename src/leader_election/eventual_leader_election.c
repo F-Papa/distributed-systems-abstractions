@@ -108,7 +108,7 @@ Ele *ele_init(int local_rank, int max_rank, int base_port,
   Ele *ele = calloc(1, sizeof(Ele));
   if (ele == NULL) {
     fll_free(fll);
-    list_free(candidates);
+    list_free(candidates, NULL);
   }
 
   int epoch = retrieve_epoch(local_rank);
@@ -225,7 +225,7 @@ void ele_start(Ele *ele, struct timeval *external_timeout) {
 
 void ele_free(Ele *mle) {
   fll_free(mle->fair_loss_link);
-  list_free(mle->candidates);
+  list_free(mle->candidates, NULL);
 }
 
 wset_t *ele_get_watch_set(Ele *ele) {

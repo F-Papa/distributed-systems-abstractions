@@ -61,7 +61,7 @@ struct LoggedPerfectLink *lpl_init(int id, int base_port,
   struct LoggedPerfectLink *lpl = calloc(1, sizeof(struct LoggedPerfectLink));
   if (lpl == NULL) {
     sbl_free(sbl);
-    list_free(deliveries);
+    list_free(deliveries, NULL);
     return NULL;
   }
 
@@ -96,7 +96,7 @@ void lpl_set_callback(struct LoggedPerfectLink *lpl,
 
 void lpl_free(struct LoggedPerfectLink *lpl) {
   sbl_free(lpl->stubborn_link);
-  list_free(lpl->deliveries);
+  list_free(lpl->deliveries, NULL);
   free(lpl);
 }
 

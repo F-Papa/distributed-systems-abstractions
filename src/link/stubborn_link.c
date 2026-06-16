@@ -37,7 +37,7 @@ struct StubbornLink *sbl_init(int id, int base_port,
   struct StubbornLink *sbl = calloc(1, sizeof(struct StubbornLink));
   if (sbl == NULL) {
     fll_free(fll);
-    list_free(outbox);
+    list_free(outbox, NULL);
     return NULL;
   }
 
@@ -89,7 +89,7 @@ void sbl_set_callback(struct StubbornLink *sbl,
 
 void sbl_free(struct StubbornLink *sbl) {
   fll_free(sbl->fair_loss_link);
-  list_free(sbl->outbox);
+  list_free(sbl->outbox, NULL);
   free(sbl);
 }
 

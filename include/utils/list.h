@@ -17,7 +17,7 @@ typedef struct List {
 
 list_t *list_init();
 
-void list_free(list_t *l);
+void list_free(list_t *l, void (*destructor)(void *));
 
 void list_add(list_t *l, void *elem);
 

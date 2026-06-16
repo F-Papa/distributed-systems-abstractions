@@ -172,7 +172,7 @@ void fll_free(struct FairLossLink *fll) {
     list_remove(_links, idx);
   }
   if (_links->count == 0) {
-    list_free(_links);
+    list_free(_links, NULL);
   }
 }
 

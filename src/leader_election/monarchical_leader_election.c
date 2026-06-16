@@ -76,7 +76,7 @@ Mle *mle_init(int local_rank, int max_rank, int base_port,
   Mle *mle = calloc(1, sizeof(Mle));
   if (mle == NULL) {
     pfd_free(pfd);
-    list_free(crashed_peers);
+    list_free(crashed_peers, NULL);
   }
 
   pfd_set_oncrash(pfd, &mle_callback_on_crash, mle);
@@ -100,7 +100,7 @@ void mle_handle_timeout(Mle *mle) {
 
 void mle_free(Mle *mle) {
   pfd_free(mle->perfect_failure_detector);
-  list_free(mle->crashed_peers);
+  list_free(mle->crashed_peers, NULL);
 }
 
 wset_t *mle_get_watch_set(Mle *mle) {

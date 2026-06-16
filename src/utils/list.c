@@ -5,13 +5,17 @@ list_t *list_init() {
   return l;
 }
 
-void list_free(list_t *l) {
+void list_free(list_t *l, void (*destructor)(void *)) {
 
   lnode_t *node = l->start;
   while (node) {
     lnode_t *tmp = node;
     node = node->next;
-    free(tmp->element);
+    if (destructor) {
+      destructor(tmp->element);
+    } else {
+      free(tmp->element);
+    }
     free(tmp);
   }
   free(l);

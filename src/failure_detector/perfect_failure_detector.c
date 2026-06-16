@@ -153,15 +153,15 @@ Pfd *pfd_init(int local_rank, int max_rank, int base_port,
   list_t *faulty_peers = list_init();
   if (faulty_peers == NULL) {
     pl_free(pl);
-    list_free(alive_peers);
+    list_free(alive_peers, NULL);
     return NULL;
   }
 
   Pfd *pfd = calloc(1, sizeof(Pfd) + max_rank * sizeof(int));
   if (pfd == NULL) {
     pl_free(pl);
-    list_free(alive_peers);
-    list_free(faulty_peers);
+    list_free(alive_peers, NULL);
+    list_free(faulty_peers, NULL);
     return NULL;
   }
 
@@ -191,8 +191,8 @@ void pfd_set_oncrash(struct PerfectFailureDetector *pfd,
 
 void pfd_free(struct PerfectFailureDetector *pfd) {
   pl_free(pfd->perfect_link);
-  list_free(pfd->alive_peers);
-  list_free(pfd->faulty_peers);
+  list_free(pfd->alive_peers, NULL);
+  list_free(pfd->faulty_peers, NULL);
   free(pfd);
 }
 
