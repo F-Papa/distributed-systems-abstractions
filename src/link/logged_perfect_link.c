@@ -78,9 +78,10 @@ struct LoggedPerfectLink *lpl_init(int id, int base_port,
 int lpl_send(struct LoggedPerfectLink *lpl, LplSend *e) {
   uuid_t uuid;
   uuid_generate_random(uuid);
-  uuid_unparse(uuid, e->id);
+  char id[UUID_STR_LEN];
+  uuid_unparse(uuid, id);
   char buf[MAX_MSG_LEN];
-  snprintf(buf, MAX_MSG_LEN, "%s,%s", e->id, e->msg);
+  snprintf(buf, MAX_MSG_LEN, "%s,%s", id, e->msg);
   strcpy(e->msg, buf);
 
   SblSend s = {.recipient = e->recipient};

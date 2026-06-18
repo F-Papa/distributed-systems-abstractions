@@ -9,7 +9,6 @@
 typedef struct {
   int recipient;
   char msg[MAX_MSG_LEN];
-  char id[UUID_STR_LEN];
 } LplSend;
 
 typedef struct {

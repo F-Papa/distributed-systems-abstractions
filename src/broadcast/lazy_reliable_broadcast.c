@@ -11,6 +11,7 @@
 #include "watch_set.h"
 #include <iso646.h>
 #include <string.h>
+#include <uuid.h>
 #include <sys/select.h>
 #include <sys/time.h>
 
@@ -74,22 +75,19 @@ void rb_consume(Rb *rb, struct timeval *external_timeout) {
 static int rb_broadcast_aux(Rb *rb, char *content, char *original_id,
                             int original_sender) {
 
-  int is_original_copy = original_id == NULL;
-  int was_first_id_generated = 0;
-
-  if (is_original_copy)
-    original_id = "NULL";
+  char my_id[UUID_STR_LEN];
+  if (original_id == NULL) {
+    uuid_t uuid;
+    uuid_generate_random(uuid);
+    uuid_unparse(uuid, my_id);
+    original_id = my_id;
+  }
 
   PlSend msg;
   snprintf(msg.msg, MAX_MSG_LEN, "BC,%d,%s,%s", original_sender, original_id,
            content);
 
   for (int peer_rank = 1; peer_rank <= rb->config.max_rank; peer_rank++) {
-    if (is_original_copy && peer_rank > 1 && !was_first_id_generated) {
-      was_first_id_generated = 1;
-      snprintf(msg.msg, MAX_MSG_LEN, "BC,%d,%s,%s", original_sender, msg.id,
-               content);
-    }
     msg.recipient = peer_rank;
     int status = pl_send(rb->perfect_link, &msg);
     if (status != 0)
@@ -117,7 +115,7 @@ void on_delivery_wrapper(void *ctx, PlDeliver *e) {
   Rb *rb = ctx;
   char buf[MAX_MSG_LEN];
 
-  debug("PlDeliver [%s] from %d: %s\n", e->id, e->sender, e->msg);
+  debug("PlDeliver from %d: %s\n", e->sender, e->msg);
 
   if (try_parse_message(e->msg, "BC", buf, MAX_MSG_LEN) == 0) {
     RbDelivery delivery;
@@ -133,7 +131,7 @@ void on_delivery_wrapper(void *ctx, PlDeliver *e) {
       return;
     }
 
-    // Parse field 2: original message ID (or "NULL")
+    // Parse field 2: original message ID
     char original_msg_id[UUID_STR_LEN];
     char *id_start = buf + sender_len + DELIM_LEN;
     int id_len = strcspn(id_start, ",");
@@ -156,10 +154,9 @@ void on_delivery_wrapper(void *ctx, PlDeliver *e) {
     debug("Checking history from og_sender (%d):\n", parsed_og_sender);
     for (int i = 0; i < history_from_peer->count; i++) {
       struct SavedMessage *saved_msg = list_get(history_from_peer, i);
-      debug("\t-id: %s | og_id: %s | saved_id: %s\n", e->id, original_msg_id,
+      debug("\tog_id: %s | saved_id: %s\n", original_msg_id,
             saved_msg->id);
-      if (strcmp(saved_msg->id, e->id) == 0 ||
-          strcmp(saved_msg->id, original_msg_id) == 0) {
+      if (strcmp(saved_msg->id, original_msg_id) == 0) {
         printf("Dup message: %s\n", e->msg);
         return;
       }
@@ -170,11 +167,7 @@ void on_delivery_wrapper(void *ctx, PlDeliver *e) {
       return;
     }
     strncpy(msg_to_save->msg, delivery.msg, MAX_MSG_LEN);
-    if (strcmp("NULL", original_msg_id) == 0) {
-      strncpy(msg_to_save->id, e->id, UUID_STR_LEN);
-    } else {
-      strncpy(msg_to_save->id, original_msg_id, UUID_STR_LEN);
-    }
+    strncpy(msg_to_save->id, original_msg_id, UUID_STR_LEN);
     list_add(history_from_peer, msg_to_save);
 
     rb->cb(rb->ctx, &delivery);

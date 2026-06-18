@@ -49,7 +49,6 @@ static void wrapper(void *ctx, PlDeliver *e) {
   memmove(e->msg, e->msg + offset, msg_len);
 
   AuthPlDeliver apl_event = {.sender = e->sender};
-  strcpy(apl_event.id, e->id);
   strcpy(apl_event.msg, e->msg);
 
   apl->cb(apl->ctx, &apl_event);
@@ -108,7 +107,6 @@ int apl_send(struct AuthPerfectLink *apl, AuthPlSend *e) {
 
   PlSend pl_s = {.recipient = e->recipient};
   strcpy(pl_s.msg, e->msg);
-  strcpy(pl_s.id, e->id);
 
   return pl_send(apl->perfect_link, &pl_s);
 }
