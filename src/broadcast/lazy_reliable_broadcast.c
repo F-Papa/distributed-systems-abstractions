@@ -11,9 +11,9 @@
 #include "watch_set.h"
 #include <iso646.h>
 #include <string.h>
-#include <uuid.h>
 #include <sys/select.h>
 #include <sys/time.h>
+#include <uuid.h>
 
 struct ReliableBroadcast {
   RbConfig config;
@@ -117,39 +117,44 @@ void on_delivery_wrapper(void *ctx, PlDeliver *e) {
 
   debug("PlDeliver from %d: %s\n", e->sender, e->msg);
 
+  enum Fields {
+    ORIGINAL_SENDER = 0,
+    ORIGINAL_ID,
+    BODY,
+  };
+
   if (try_parse_message(e->msg, "BC", buf, MAX_MSG_LEN) == 0) {
     RbDelivery delivery;
 
     char *fields[3];
-    if (parse_message(buf, fields, 3) != 0) return;
+    if (parse_message(buf, fields, 3) != 0)
+      return;
 
-    int parsed_og_sender = atoi(fields[0]);
-    if (parsed_og_sender < 1 || parsed_og_sender > rb->config.max_rank) {
-      for (int i = 0; i < 3; i++) free(fields[i]);
+    int original_sender = atoi(fields[ORIGINAL_SENDER]);
+    if (original_sender < 1 || original_sender > rb->config.max_rank) {
+      for (int i = 0; i < 3; i++)
+        free(fields[i]);
       return;
     }
 
-    char original_msg_id[UUID_STR_LEN];
-    strncpy(original_msg_id, fields[1], UUID_STR_LEN);
-    strncpy(delivery.msg, fields[2], MAX_MSG_LEN);
-    delivery.sender = parsed_og_sender;
+    strncpy(delivery.msg, fields[BODY], MAX_MSG_LEN);
+    delivery.sender = original_sender;
 
-    for (int i = 0; i < 3; i++) free(fields[i]);
-
-    if (parsed_og_sender == rb->config.local_rank) {
+    if (original_sender == rb->config.local_rank) {
       if (e->sender == rb->config.local_rank) {
         rb->cb(rb->ctx, &delivery);
       }
+      for (int i = 0; i < 3; i++)
+        free(fields[i]);
       return;
     }
 
-    list_t *history_from_peer = rb->history[parsed_og_sender - 1];
-    debug("Checking history from og_sender (%d):\n", parsed_og_sender);
+    list_t *history_from_peer = rb->history[original_sender - 1];
+    debug("Checking history from og_sender (%d):\n", original_sender);
     for (int i = 0; i < history_from_peer->count; i++) {
       struct SavedMessage *saved_msg = list_get(history_from_peer, i);
-      debug("\tog_id: %s | saved_id: %s\n", original_msg_id,
-            saved_msg->id);
-      if (strcmp(saved_msg->id, original_msg_id) == 0) {
+      debug("\tog_id: %s | saved_id: %s\n", fields[ORIGINAL_ID], saved_msg->id);
+      if (strcmp(saved_msg->id, fields[ORIGINAL_ID]) == 0) {
         printf("Dup message: %s\n", e->msg);
         return;
       }
@@ -160,8 +165,11 @@ void on_delivery_wrapper(void *ctx, PlDeliver *e) {
       return;
     }
     strncpy(msg_to_save->msg, delivery.msg, MAX_MSG_LEN);
-    strncpy(msg_to_save->id, original_msg_id, UUID_STR_LEN);
+    strncpy(msg_to_save->id, fields[ORIGINAL_ID], UUID_STR_LEN);
     list_add(history_from_peer, msg_to_save);
+
+    for (int i = 0; i < 3; i++)
+      free(fields[i]);
 
     rb->cb(rb->ctx, &delivery);
   } else {

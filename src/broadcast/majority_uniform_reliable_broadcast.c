@@ -41,7 +41,6 @@ static int send_with_headers(Urb *urb, char *content, char *original_id,
   return beb_broadcast(urb->best_effort_broadcast, &to_send);
 }
 
-// TODO: implement
 static void urb_callback(void *ctx, BebDelivery *e) {
   debug("Calling URB callback\n");
   Urb *urb = ctx;
@@ -49,27 +48,30 @@ static void urb_callback(void *ctx, BebDelivery *e) {
   char buf[MAX_MSG_LEN];
   debug("Msg from (%d): %s\n", e->sender, e->msg);
 
+  enum Fields {
+    ORIGINAL_SENDER = 0,
+    ORIGINAL_ID,
+    BODY,
+  };
+
   if (try_parse_message(e->msg, "BC", buf, MAX_MSG_LEN) == 0) {
     char *fields[3];
-    if (parse_message(buf, fields, 3) != 0) return;
+    if (parse_message(buf, fields, 3) != 0)
+      return;
 
-    debug("Original Sender: %s\n", fields[0]);
+    debug("Original Sender: %s\n", fields[ORIGINAL_SENDER]);
 
-    int parsed_og_sender = atoi(fields[0]);
-    if (parsed_og_sender < 1 || parsed_og_sender > urb->config.max_rank) {
-      for (int i = 0; i < 3; i++) free(fields[i]);
+    int original_sender = atoi(fields[ORIGINAL_SENDER]);
+    if (original_sender < 1 || original_sender > urb->config.max_rank) {
+      for (int i = 0; i < 3; i++)
+        free(fields[i]);
       return;
     }
 
-    char original_msg_id[UUID_STR_LEN];
-    strncpy(original_msg_id, fields[1], UUID_STR_LEN);
+    debug("Original Id: %s\n", fields[ORIGINAL_ID]);
 
-    debug("Original Id: %s\n", original_msg_id);
-
-    strncpy(delivery.msg, fields[2], MAX_MSG_LEN);
-    delivery.sender = parsed_og_sender;
-
-    for (int i = 0; i < 3; i++) free(fields[i]);
+    strncpy(delivery.msg, fields[BODY], MAX_MSG_LEN);
+    delivery.sender = original_sender;
 
     debug("Content: %s\n", delivery.msg);
 
@@ -78,29 +80,30 @@ static void urb_callback(void *ctx, BebDelivery *e) {
       struct SavedMessage *msg = list_get(urb->received, i);
       debug("Previously saved message (%d/%d): %s\n", i + 1,
             urb->received->count, msg->id);
-      if (strcmp(msg->id, original_msg_id) == 0) {
+      if (strcmp(msg->id, fields[ORIGINAL_ID]) == 0) {
         prev_saved_msg = msg;
         break;
       }
     }
 
     if (prev_saved_msg == NULL) {
-      debug("%s) wasn't already received.\n", original_msg_id);
+      debug("%s) wasn't already received.\n", fields[ORIGINAL_ID]);
       int alloc_size =
           sizeof(struct SavedMessage) + sizeof(int) * urb->config.max_rank;
       prev_saved_msg = calloc(1, alloc_size);
-      strncpy(prev_saved_msg->id, original_msg_id, UUID_STR_LEN);
+      strncpy(prev_saved_msg->id, fields[ORIGINAL_ID], UUID_STR_LEN);
       list_add(urb->received, prev_saved_msg);
-      debug("%s) Added to list.\n", original_msg_id);
+      debug("%s) Added to list.\n", fields[ORIGINAL_ID]);
 
-      if (parsed_og_sender != urb->config.local_rank) {
-        send_with_headers(urb, delivery.msg, original_msg_id, parsed_og_sender);
-        debug("%s) Acknowledged.\n", original_msg_id);
+      if (original_sender != urb->config.local_rank) {
+        send_with_headers(urb, delivery.msg, fields[ORIGINAL_ID],
+                          original_sender);
+        debug("%s) Acknowledged.\n", fields[ORIGINAL_ID]);
       } else {
-        debug("%s) Ignored (sent by self).\n", original_msg_id);
+        debug("%s) Ignored (sent by self).\n", fields[ORIGINAL_ID]);
       }
     } else {
-      debug("%s) already received.\n", original_msg_id);
+      debug("%s) already received.\n", fields[ORIGINAL_ID]);
     }
 
     prev_saved_msg->acks[e->sender - 1] = 1;
@@ -113,22 +116,25 @@ static void urb_callback(void *ctx, BebDelivery *e) {
       }
 
       int quorum_size = urb->config.max_rank / 2 + 1;
-      debug("%s) Already delivered. Acks: %d/%d\n", original_msg_id,
+      debug("%s) Already delivered. Acks: %d/%d\n", fields[ORIGINAL_ID],
             acks_received, quorum_size);
       if (acks_received >= quorum_size) {
         urb->callback(urb, &delivery);
         prev_saved_msg->was_delivered = 1;
       }
     } else {
-      debug("%s) Already delivered.\n", original_msg_id);
+      debug("%s) Already delivered.\n", fields[ORIGINAL_ID]);
     }
+    for (int i = 0; i < 3; i++)
+      free(fields[i]);
+
   } else {
     printf("UNKNOW MESSAGE FROM %d: %s\n", e->sender, e->msg);
   }
+
   debug("URB Callback Returned\n");
 }
 
-// TODO: implement
 Urb *urb_init(UrbConfig config) {
   Beb *best_effort_broadcast =
       beb_init(config.local_rank, config.max_rank, config.base_port,
@@ -157,7 +163,6 @@ Urb *urb_init(UrbConfig config) {
   return urb;
 }
 
-// TODO: implement
 int urb_broadcast(Urb *urb, RbSend *e) {
   return send_with_headers(urb, e->msg, NULL, urb->config.local_rank);
 }
