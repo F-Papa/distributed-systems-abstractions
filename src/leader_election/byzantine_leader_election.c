@@ -22,13 +22,11 @@ typedef struct ByzantineLeaderElector {
 int get_round_leader(Ble *ble) { return ble->round % ble->max_rank + 1; }
 
 void ble_complain(Ble *ble) {
-  AuthPlSend r = {};
-  snprintf(r.base.base.msg, MAX_MSG_LEN, "CO,%d", ble->round);
-
   for (int i = 1; i <= ble->max_rank; i++) {
     if (i == ble->local_rank)
       continue;
-    r.base.base.recipient = i;
+    AuthPlSend r = {.recipient = i};
+    snprintf(r.msg, MAX_MSG_LEN, "CO,%d", ble->round);
     apl_send(ble->auth_perfect_link, &r);
   }
 
@@ -44,20 +42,19 @@ void ble_set_on_trust_callback(Ble *ble, void (*cb)(void *, ByzTrust *),
 static void ble_callback(void *ctx, AuthPlDeliver *deliver) {
   Ble *ble = ctx;
   char body[MAX_MSG_LEN];
-  if (try_parse_message(deliver->base.base.msg, "CO", body, MAX_MSG_LEN) == 0) {
+  if (try_parse_message(deliver->msg, "CO", body, MAX_MSG_LEN) == 0) {
     int round = atoi(body);
 
     if (round != ble->round) {
-      debug("Received complain from %d for wrong round (%d)\n",
-            deliver->base.base.sender, round);
+      debug("Received complain from %d for wrong round (%d)\n", deliver->sender,
+            round);
       return;
     }
 
     for (int i = 0; i < ble->complains->count; i++) {
       ByzComplain *past_complain = list_get(ble->complains, i);
-      if (past_complain->peer_rank == deliver->base.base.sender) {
-        debug("Duplicated complain from %d\n", deliver->base.base.sender,
-              round);
+      if (past_complain->peer_rank == deliver->sender) {
+        debug("Duplicated complain from %d\n", deliver->sender, round);
         return;
       }
     }
@@ -65,7 +62,7 @@ static void ble_callback(void *ctx, AuthPlDeliver *deliver) {
     if (new_complain == NULL)
       return;
 
-    new_complain->peer_rank = deliver->base.base.sender;
+    new_complain->peer_rank = deliver->sender;
     new_complain->round = round;
     list_add(ble->complains, new_complain);
 
@@ -85,8 +82,7 @@ static void ble_callback(void *ctx, AuthPlDeliver *deliver) {
     }
 
   } else {
-    printf("UNKNOWN MESSAGE FROM %d: %s\n", deliver->base.base.sender,
-           deliver->base.base.msg);
+    printf("UNKNOWN MESSAGE FROM %d: %s\n", deliver->sender, deliver->msg);
   }
 }
 

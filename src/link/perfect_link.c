@@ -52,7 +52,8 @@ static void wrapper(void *ctx, SblDeliver *e) {
   }
 
   list_add(pl->inbox, hash);
-  PlDeliver pl_event = {.base = *e};
+  PlDeliver pl_event = {.sender = e->sender};
+  strcpy(pl_event.msg, e->msg);
   strcpy(pl_event.id, id);
   debug("Calling PL Callback\n");
   pl->cb(pl->ctx, &pl_event);
@@ -88,8 +89,8 @@ int pl_send(struct PerfectLink *pl, PlSend *e) {
   uuid_t uuid;
   uuid_generate_random(uuid);
   uuid_unparse(uuid, e->id);
-  SblSend msg_with_id = {.recipient = e->base.recipient};
-  snprintf(msg_with_id.msg, MAX_MSG_LEN, "%s,%s", e->id, e->base.msg);
+  SblSend msg_with_id = {.recipient = e->recipient};
+  snprintf(msg_with_id.msg, MAX_MSG_LEN, "%s,%s", e->id, e->msg);
   return sbl_send(pl->stubborn_link, &msg_with_id);
 }
 

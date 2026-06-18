@@ -18,11 +18,11 @@ struct AuthPerfectLink {
 static void wrapper(void *ctx, PlDeliver *e) {
   struct AuthPerfectLink *apl = ctx;
 
-  int sig_hex_len = strcspn(e->base.msg, ",");
-  if (sig_hex_len == 0 || sig_hex_len >= (int)sizeof(e->base.msg))
+  int sig_hex_len = strcspn(e->msg, ",");
+  if (sig_hex_len == 0 || sig_hex_len >= (int)sizeof(e->msg))
     return;
 
-  int sender = e->base.sender;
+  int sender = e->sender;
   if (sender < 1 || sender > apl->max_rank) {
     debug("AuthPL: unknown sender %d\n", sender);
     return;
@@ -30,26 +30,28 @@ static void wrapper(void *ctx, PlDeliver *e) {
 
   unsigned char sig[crypto_sign_BYTES];
   size_t sig_len = 0;
-  if (sodium_hex2bin(sig, sizeof(sig), e->base.msg, sig_hex_len, NULL, &sig_len,
+  if (sodium_hex2bin(sig, sizeof(sig), e->msg, sig_hex_len, NULL, &sig_len,
                      NULL) != 0)
     return;
 
   int offset = sig_hex_len + DELIM_LEN;
-  if (offset >= (int)strlen(e->base.msg))
+  if (offset >= (int)strlen(e->msg))
     return;
 
-  if (crypto_sign_verify_detached(
-          sig, (unsigned char *)e->base.msg + offset,
-          (unsigned long long)(strlen(e->base.msg) - offset),
-          apl->public_keys[sender]) != 0) {
+  if (crypto_sign_verify_detached(sig, (unsigned char *)e->msg + offset,
+                                  (unsigned long long)(strlen(e->msg) - offset),
+                                  apl->public_keys[sender]) != 0) {
     debug("AuthPL: invalid signature from %d\n", sender);
     return;
   }
 
-  size_t msg_len = strlen(e->base.msg) - offset + 1;
-  memmove(e->base.msg, e->base.msg + offset, msg_len);
+  size_t msg_len = strlen(e->msg) - offset + 1;
+  memmove(e->msg, e->msg + offset, msg_len);
 
-  AuthPlDeliver apl_event = {.base = *e};
+  AuthPlDeliver apl_event = {.sender = e->sender};
+  strcpy(apl_event.id, e->id);
+  strcpy(apl_event.msg, e->msg);
+
   apl->cb(apl->ctx, &apl_event);
 }
 
@@ -94,18 +96,21 @@ apl_init(int id, int base_port, int retransmission_period,
 int apl_send(struct AuthPerfectLink *apl, AuthPlSend *e) {
   unsigned char sig[crypto_sign_BYTES];
   unsigned long long sig_len = 0;
-  crypto_sign_detached(sig, &sig_len, (unsigned char *)e->base.base.msg,
-                       (unsigned long long)strlen(e->base.base.msg),
-                       apl->private_key);
+  crypto_sign_detached(sig, &sig_len, (unsigned char *)e->msg,
+                       (unsigned long long)strlen(e->msg), apl->private_key);
 
   char sig_hex[SIG_HEX_LEN];
   sodium_bin2hex(sig_hex, sizeof(sig_hex), sig, sizeof(sig));
 
   char buf[MAX_MSG_LEN];
-  snprintf(buf, sizeof(buf), "%s,%s", sig_hex, e->base.base.msg);
-  strcpy(e->base.base.msg, buf);
+  snprintf(buf, sizeof(buf), "%s,%s", sig_hex, e->msg);
+  strcpy(e->msg, buf);
 
-  return pl_send(apl->perfect_link, &e->base);
+  PlSend pl_s = {.recipient = e->recipient};
+  strcpy(pl_s.msg, e->msg);
+  strcpy(pl_s.id, e->id);
+
+  return pl_send(apl->perfect_link, &pl_s);
 }
 
 void apl_consume(struct AuthPerfectLink *apl, struct timeval *timeout) {

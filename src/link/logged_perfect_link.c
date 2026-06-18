@@ -1,5 +1,6 @@
 #include "link/logged_perfect_link.h"
 #include "constants.h"
+#include "link/stubborn_link.h"
 #include "orchestration/handler.h"
 #include "watch_set.h"
 #include <stdlib.h>
@@ -39,7 +40,8 @@ static void wrapper(void *ctx, SblDeliver *e) {
 
   LplDeliver *lpl_delivery = calloc(1, sizeof(LplDeliver));
   strcpy(lpl_delivery->id, id);
-  lpl_delivery->base = *e;
+  lpl_delivery->sender = e->sender;
+  strcpy(lpl_delivery->msg, e->msg);
 
   list_add(lpl->deliveries, lpl_delivery);
   store_deliveries();
@@ -78,9 +80,12 @@ int lpl_send(struct LoggedPerfectLink *lpl, LplSend *e) {
   uuid_generate_random(uuid);
   uuid_unparse(uuid, e->id);
   char buf[MAX_MSG_LEN];
-  snprintf(buf, MAX_MSG_LEN, "%s,%s", e->id, e->base.msg);
-  strcpy(e->base.msg, buf);
-  return sbl_send(lpl->stubborn_link, &e->base);
+  snprintf(buf, MAX_MSG_LEN, "%s,%s", e->id, e->msg);
+  strcpy(e->msg, buf);
+
+  SblSend s = {.recipient = e->recipient};
+  strcpy(s.msg, e->msg);
+  return sbl_send(lpl->stubborn_link, &s);
 }
 
 void lpl_consume(struct LoggedPerfectLink *lpl, struct timeval *timeout) {

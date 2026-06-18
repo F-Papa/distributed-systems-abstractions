@@ -14,8 +14,8 @@ struct BestEffortBroadcast {
 
 static void wrapper(void *ctx, PlDeliver *e) {
   debug("Calling BEB Callback\n");
-  BebDelivery delivery = {.sender = e->base.sender};
-  strncpy(delivery.msg, e->base.msg, MAX_MSG_LEN);
+  BebDelivery delivery = {.sender = e->sender};
+  strncpy(delivery.msg, e->msg, MAX_MSG_LEN);
   Beb *beb = ctx;
   beb->cb(beb->ctx, &delivery);
   debug("BEB Returned\n");
@@ -44,10 +44,10 @@ Beb *beb_init(int local_rank, int max_rank, int base_port,
 
 int beb_broadcast(Beb *beb, BebSend *e) {
   PlSend msg;
-  strncpy(msg.base.msg, e->msg, MAX_MSG_LEN);
+  strncpy(msg.msg, e->msg, MAX_MSG_LEN);
 
   for (size_t peer_rank = 1; peer_rank <= beb->max_rank; peer_rank++) {
-    msg.base.recipient = peer_rank;
+    msg.recipient = peer_rank;
     int status = pl_send(beb->perfect_link, &msg);
 
     if (status != 0)

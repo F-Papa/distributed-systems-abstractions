@@ -81,16 +81,16 @@ static int rb_broadcast_aux(Rb *rb, char *content, char *original_id,
     original_id = "NULL";
 
   PlSend msg;
-  snprintf(msg.base.msg, MAX_MSG_LEN, "BC,%d,%s,%s", original_sender,
-           original_id, content);
+  snprintf(msg.msg, MAX_MSG_LEN, "BC,%d,%s,%s", original_sender, original_id,
+           content);
 
   for (int peer_rank = 1; peer_rank <= rb->config.max_rank; peer_rank++) {
     if (is_original_copy && peer_rank > 1 && !was_first_id_generated) {
       was_first_id_generated = 1;
-      snprintf(msg.base.msg, MAX_MSG_LEN, "BC,%d,%s,%s", original_sender,
-               msg.id, content);
+      snprintf(msg.msg, MAX_MSG_LEN, "BC,%d,%s,%s", original_sender, msg.id,
+               content);
     }
-    msg.base.recipient = peer_rank;
+    msg.recipient = peer_rank;
     int status = pl_send(rb->perfect_link, &msg);
     if (status != 0)
       return status;
@@ -117,9 +117,9 @@ void on_delivery_wrapper(void *ctx, PlDeliver *e) {
   Rb *rb = ctx;
   char buf[MAX_MSG_LEN];
 
-  debug("PlDeliver [%s] from %d: %s\n", e->id, e->base.sender, e->base.msg);
+  debug("PlDeliver [%s] from %d: %s\n", e->id, e->sender, e->msg);
 
-  if (try_parse_message(e->base.msg, "BC", buf, MAX_MSG_LEN) == 0) {
+  if (try_parse_message(e->msg, "BC", buf, MAX_MSG_LEN) == 0) {
     RbDelivery delivery;
 
     // Parse field 1: original sender (rank string)
@@ -146,7 +146,7 @@ void on_delivery_wrapper(void *ctx, PlDeliver *e) {
     delivery.sender = parsed_og_sender;
 
     if (parsed_og_sender == rb->config.local_rank) {
-      if (e->base.sender == rb->config.local_rank) {
+      if (e->sender == rb->config.local_rank) {
         rb->cb(rb->ctx, &delivery);
       }
       return;
@@ -160,7 +160,7 @@ void on_delivery_wrapper(void *ctx, PlDeliver *e) {
             saved_msg->id);
       if (strcmp(saved_msg->id, e->id) == 0 ||
           strcmp(saved_msg->id, original_msg_id) == 0) {
-        printf("Dup message: %s\n", e->base.msg);
+        printf("Dup message: %s\n", e->msg);
         return;
       }
     }
@@ -179,7 +179,7 @@ void on_delivery_wrapper(void *ctx, PlDeliver *e) {
 
     rb->cb(rb->ctx, &delivery);
   } else {
-    printf("UNKNOW MESSAGE FROM %d: %s\n", e->base.sender, e->base.msg);
+    printf("UNKNOW MESSAGE FROM %d: %s\n", e->sender, e->msg);
   }
 }
 

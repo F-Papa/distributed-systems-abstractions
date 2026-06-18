@@ -24,12 +24,12 @@ struct PerfectFailureDetector {
 };
 
 static int send_im_alive(struct PerfectLink *pl, int recipient) {
-  PlSend im_alive = {.base.msg = "IA", .base.recipient = recipient};
+  PlSend im_alive = {.msg = "IA", .recipient = recipient};
   return pl_send(pl, &im_alive);
 }
 
 static int send_heartbeat(struct PerfectLink *pl, int recipient) {
-  PlSend heartbeat = {.base.msg = "HB", .base.recipient = recipient};
+  PlSend heartbeat = {.msg = "HB", .recipient = recipient};
   return pl_send(pl, &heartbeat);
 }
 
@@ -79,18 +79,18 @@ static void pfd_callback(void *ctx, PlDeliver *e) {
   struct PerfectFailureDetector *pfd = ctx;
   char msg[MAX_MSG_LEN];
   int *sender = calloc(1, sizeof(int));
-  *sender = e->base.sender;
+  *sender = e->sender;
 
-  if (try_parse_message(e->base.msg, "HB", msg, MAX_MSG_LEN) == 0) {
+  if (try_parse_message(e->msg, "HB", msg, MAX_MSG_LEN) == 0) {
     debug("HB from %d\n", *sender);
-    send_im_alive(pfd->perfect_link, e->base.sender);
+    send_im_alive(pfd->perfect_link, e->sender);
 
-  } else if (try_parse_message(e->base.msg, "IA", msg, MAX_MSG_LEN) == 0) {
+  } else if (try_parse_message(e->msg, "IA", msg, MAX_MSG_LEN) == 0) {
     debug("IA from %d\n", *sender);
     list_add(pfd->alive_peers, sender);
 
   } else {
-    printf("UNKNOW MESSAGE FROM %d: %s\n", *sender, e->base.msg);
+    printf("UNKNOW MESSAGE FROM %d: %s\n", *sender, e->msg);
     free(sender);
   }
 }

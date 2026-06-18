@@ -9,11 +9,15 @@
 #define SIG_HEX_LEN (crypto_sign_BYTES * 2 + 1)
 
 typedef struct {
-  PlSend base;
+  int recipient;
+  char msg[MAX_MSG_LEN];
+  char id[UUID_STR_LEN];
 } AuthPlSend;
 
 typedef struct {
-  PlDeliver base;
+  int sender;
+  char msg[MAX_MSG_LEN];
+  char id[UUID_STR_LEN];
 } AuthPlDeliver;
 
 typedef struct AuthPerfectLink Apl;

@@ -7,12 +7,14 @@
 #include "utils/list.h"
 
 typedef struct {
-  SblSend base;
+  int recipient;
+  char msg[MAX_MSG_LEN];
   char id[UUID_STR_LEN];
 } LplSend;
 
 typedef struct {
-  SblDeliver base;
+  int sender;
+  char msg[MAX_MSG_LEN];
   char id[UUID_STR_LEN];
 } LplDeliver;
 

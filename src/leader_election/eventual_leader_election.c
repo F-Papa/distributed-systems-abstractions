@@ -8,13 +8,15 @@
 #include <bits/types/struct_timeval.h>
 #include <stdio.h>
 #include <stdlib.h>
+#include <string.h>
 
 #define HEARTHBEAT_INTERVAL_SEC 4
 
 int HEARTBEAT_INCREMENT_SEC = 2;
 
 typedef struct Heartbeat {
-  FllDeliver base;
+  int sender;
+  char msg[MAX_MSG_LEN];
   int epoch;
 } Heartbeat;
 
@@ -41,7 +43,7 @@ static void wrapper(void *ctx, FllDeliver *e) {
     for (int i = 0; i < ele->candidates->count; i++) {
       Heartbeat *past_hb = list_get(ele->candidates, i);
 
-      if (past_hb->base.sender == e->sender) {
+      if (past_hb->sender == e->sender) {
         if (past_hb->epoch < peer_epoch) {
           list_remove(ele->candidates, i);
         }
@@ -50,7 +52,8 @@ static void wrapper(void *ctx, FllDeliver *e) {
     }
 
     Heartbeat *heartbeat_copy = calloc(1, sizeof(Heartbeat));
-    heartbeat_copy->base = *e;
+    strcpy(heartbeat_copy->msg, e->msg);
+    heartbeat_copy->sender = e->sender;
     heartbeat_copy->epoch = peer_epoch;
     list_add(ele->candidates, heartbeat_copy);
 
@@ -137,32 +140,32 @@ void ele_set_on_new_trust(Ele *ele, void (*cb)(void *, Trust *), void *ctx) {
 
 void ele_handle_timeout(Ele *ele) {
   debug("Timer done\n");
-  Heartbeat best_candidate = {.base = {.sender = ele->local_rank},
+  Heartbeat best_candidate = {.sender = ele->local_rank,
                               .epoch = ele->local_epoch};
 
   debug("Local epoch: %d | Leader: %d\n", ele->local_epoch, ele->leader);
   for (int i = 0; i < ele->candidates->count; i++) {
     Heartbeat *last_hb = list_get(ele->candidates, i);
-    debug("Peer %d Epoch %d\n", last_hb->base.sender, last_hb->epoch);
+    debug("Peer %d Epoch %d\n", last_hb->sender, last_hb->epoch);
   }
 
   for (int i = 0; i < ele->candidates->count; i++) {
     Heartbeat *last_hb = list_get(ele->candidates, i);
     if (last_hb->epoch < best_candidate.epoch ||
-        (last_hb->base.sender > best_candidate.base.sender &&
+        (last_hb->sender > best_candidate.sender &&
          last_hb->epoch == best_candidate.epoch)) {
-      debug("New best candidate %d\n", last_hb->base.sender);
+      debug("New best candidate %d\n", last_hb->sender);
       best_candidate = *last_hb;
 
     } else {
       debug("Peer %d with epoch %d is not a better candidate\n",
-            last_hb->base.sender, last_hb->epoch);
+            last_hb->sender, last_hb->epoch);
     }
   }
 
-  if (best_candidate.base.sender != ele->leader) {
+  if (best_candidate.sender != ele->leader) {
     debug("New leader\n");
-    ele->leader = best_candidate.base.sender;
+    ele->leader = best_candidate.sender;
     ele->period_duration_secs += HEARTBEAT_INCREMENT_SEC;
 
     Trust trust_indication = {.peer_rank = ele->leader};
