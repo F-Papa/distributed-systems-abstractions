@@ -120,28 +120,21 @@ void on_delivery_wrapper(void *ctx, PlDeliver *e) {
   if (try_parse_message(e->msg, "BC", buf, MAX_MSG_LEN) == 0) {
     RbDelivery delivery;
 
-    // Parse field 1: original sender (rank string)
-    int sender_len = strcspn(buf, ",");
-    char sender_str[12];
-    strncpy(sender_str, buf, sender_len);
-    sender_str[sender_len] = '\0';
+    char *fields[3];
+    if (parse_message(buf, fields, 3) != 0) return;
 
-    int parsed_og_sender = atoi(sender_str);
+    int parsed_og_sender = atoi(fields[0]);
     if (parsed_og_sender < 1 || parsed_og_sender > rb->config.max_rank) {
+      for (int i = 0; i < 3; i++) free(fields[i]);
       return;
     }
 
-    // Parse field 2: original message ID
     char original_msg_id[UUID_STR_LEN];
-    char *id_start = buf + sender_len + DELIM_LEN;
-    int id_len = strcspn(id_start, ",");
-    strncpy(original_msg_id, id_start, id_len);
-    original_msg_id[id_len] = '\0';
-
-    // Parse field 3: message content
-    char *content_start = id_start + id_len + DELIM_LEN;
-    strncpy(delivery.msg, content_start, MAX_MSG_LEN);
+    strncpy(original_msg_id, fields[1], UUID_STR_LEN);
+    strncpy(delivery.msg, fields[2], MAX_MSG_LEN);
     delivery.sender = parsed_og_sender;
+
+    for (int i = 0; i < 3; i++) free(fields[i]);
 
     if (parsed_og_sender == rb->config.local_rank) {
       if (e->sender == rb->config.local_rank) {

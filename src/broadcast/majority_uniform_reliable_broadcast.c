@@ -50,33 +50,26 @@ static void urb_callback(void *ctx, BebDelivery *e) {
   debug("Msg from (%d): %s\n", e->sender, e->msg);
 
   if (try_parse_message(e->msg, "BC", buf, MAX_MSG_LEN) == 0) {
-    // Parse field 1: original sender (rank string)
-    int sender_len = strcspn(buf, ",");
-    char sender_str[12];
-    strncpy(sender_str, buf, sender_len);
-    sender_str[sender_len] = '\0';
+    char *fields[3];
+    if (parse_message(buf, fields, 3) != 0) return;
 
-    debug("Original Sender: %s\n", sender_str);
+    debug("Original Sender: %s\n", fields[0]);
 
-    int parsed_og_sender = atoi(sender_str);
+    int parsed_og_sender = atoi(fields[0]);
     if (parsed_og_sender < 1 || parsed_og_sender > urb->config.max_rank) {
-      debug("Invalid sender\n", sender_str);
+      for (int i = 0; i < 3; i++) free(fields[i]);
       return;
     }
 
-    // Parse field 2: original message ID (or "NULL")
     char original_msg_id[UUID_STR_LEN];
-    char *id_start = buf + sender_len + DELIM_LEN;
-    int id_len = strcspn(id_start, ",");
-    strncpy(original_msg_id, id_start, id_len);
-    original_msg_id[id_len] = '\0';
+    strncpy(original_msg_id, fields[1], UUID_STR_LEN);
 
     debug("Original Id: %s\n", original_msg_id);
 
-    // Parse field 3: message content
-    char *content_start = id_start + id_len + DELIM_LEN;
-    strncpy(delivery.msg, content_start, MAX_MSG_LEN);
+    strncpy(delivery.msg, fields[2], MAX_MSG_LEN);
     delivery.sender = parsed_og_sender;
+
+    for (int i = 0; i < 3; i++) free(fields[i]);
 
     debug("Content: %s\n", delivery.msg);
 
