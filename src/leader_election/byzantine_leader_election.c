@@ -1,6 +1,6 @@
 #include "leader_election/byzantine_leader_election.h"
-#include "link/common.h"
 #include "link/auth_perfect_link.h"
+#include "link/common.h"
 #include "utils/list.h"
 #include <bits/types/struct_timeval.h>
 #include <stdio.h>
@@ -103,22 +103,18 @@ void ble_start(Ble *ble, struct timeval *timeout) {
   apl_consume(ble->auth_perfect_link, timeout);
 }
 
-Ble *ble_init(int rank, int base_port, int retransmission_period,
-              int max_faulty_peers,
-              const unsigned char private_key[crypto_sign_SECRETKEYBYTES],
-              int max_rank,
-              const unsigned char public_keys[][crypto_sign_PUBLICKEYBYTES]) {
+Ble *ble_init(BleConfig config) {
 
-  if ((float)max_rank / (float)3 <= (float)max_faulty_peers) {
+  if ((float)config.aplConfig.max_rank / (float)3 <=
+      (float)config.max_faulty_peers) {
     fprintf(stderr,
             "Byzantine faults of upto %d peers cannot be tolerated when total "
             "is %d.\n",
-            max_faulty_peers, max_rank);
+            config.max_faulty_peers, config.aplConfig.max_rank);
     return NULL;
   }
 
-  Apl *apl = apl_init(rank, base_port, retransmission_period, private_key,
-                      max_rank, public_keys);
+  Apl *apl = apl_init(config.aplConfig);
 
   if (apl == NULL) {
     return NULL;
@@ -139,9 +135,9 @@ Ble *ble_init(int rank, int base_port, int retransmission_period,
 
   ble->complains = complains;
   ble->auth_perfect_link = apl;
-  ble->local_rank = rank;
-  ble->max_rank = max_rank;
-  ble->max_faulty_peers = max_faulty_peers;
+  ble->local_rank = config.aplConfig.local_rank;
+  ble->max_rank = config.aplConfig.max_rank;
+  ble->max_faulty_peers = config.max_faulty_peers;
   apl_set_callback(apl, ble_callback, ble);
   return ble;
 }

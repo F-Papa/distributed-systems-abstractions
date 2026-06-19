@@ -1,4 +1,0 @@
-#ifndef BYZANTINE_BROADCAST_H
-#define BYZANTINE_BROADCAST_H
-
-#endif

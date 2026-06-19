@@ -55,12 +55,9 @@ static void wrapper(void *ctx, Deliver *e) {
   apl->cb(apl->ctx, &apl_event);
 }
 
-struct AuthPerfectLink *
-apl_init(int id, int base_port, int retransmission_period,
-         const unsigned char private_key[crypto_sign_SECRETKEYBYTES],
-         int max_rank,
-         const unsigned char public_keys[][crypto_sign_PUBLICKEYBYTES]) {
-  struct PerfectLink *pl = pl_init(id, base_port, retransmission_period);
+struct AuthPerfectLink *apl_init(AplConfig config) {
+  struct PerfectLink *pl = pl_init(config.local_rank, config.base_port,
+                                   config.retransmission_period);
   if (pl == NULL)
     return NULL;
 
@@ -71,19 +68,19 @@ apl_init(int id, int base_port, int retransmission_period,
   }
 
   unsigned char (*pk_copy)[crypto_sign_PUBLICKEYBYTES] =
-      calloc(max_rank + 1, sizeof(*pk_copy));
+      calloc(config.max_rank + 1, sizeof(*pk_copy));
   if (pk_copy == NULL) {
     pl_free(pl);
     free(apl);
     return NULL;
   }
 
-  memcpy(apl->private_key, private_key, crypto_sign_SECRETKEYBYTES);
-  for (int i = 1; i <= max_rank; i++)
-    memcpy(pk_copy[i], public_keys[i], crypto_sign_PUBLICKEYBYTES);
+  memcpy(apl->private_key, config.private_key, crypto_sign_SECRETKEYBYTES);
+  for (int i = 1; i <= config.max_rank; i++)
+    memcpy(pk_copy[i], config.public_keys[i], crypto_sign_PUBLICKEYBYTES);
 
   apl->public_keys = pk_copy;
-  apl->max_rank = max_rank;
+  apl->max_rank = config.max_rank;
   apl->perfect_link = pl;
   apl->cb = NULL;
   apl->ctx = NULL;

@@ -10,12 +10,16 @@
 #define SIG_HEX_LEN (crypto_sign_BYTES * 2 + 1)
 
 typedef struct AuthPerfectLink Apl;
+typedef struct AplConfig {
+  int local_rank;
+  int max_rank;
+  int base_port;
+  int retransmission_period;
+  const unsigned char private_key[crypto_sign_SECRETKEYBYTES];
+  const unsigned char public_keys[][crypto_sign_PUBLICKEYBYTES];
+} AplConfig;
 
-struct AuthPerfectLink *
-apl_init(int id, int base_port, int retransmission_period,
-         const unsigned char private_key[crypto_sign_SECRETKEYBYTES],
-         int max_rank,
-         const unsigned char public_keys[][crypto_sign_PUBLICKEYBYTES]);
+struct AuthPerfectLink *apl_init(AplConfig config);
 
 int apl_send(struct AuthPerfectLink *apl, Send *e);
 

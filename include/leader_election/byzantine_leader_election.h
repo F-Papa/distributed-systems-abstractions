@@ -1,6 +1,7 @@
 #ifndef BYZANTINE_LEADER_ELECTION_H
 #define BYZANTINE_LEADER_ELECTION_H
 
+#include "link/auth_perfect_link.h"
 #include "orchestration/handler.h"
 #include "orchestration/task.h"
 #include "watch_set.h"
@@ -19,11 +20,12 @@ typedef struct byzantine_complain {
   int peer_rank;
 } ByzComplain;
 
-Ble *ble_init(int rank, int base_port, int retransmission_period,
-              int max_faulty_peers,
-              const unsigned char private_key[crypto_sign_SECRETKEYBYTES],
-              int max_rank,
-              const unsigned char public_keys[][crypto_sign_PUBLICKEYBYTES]);
+typedef struct BleConfig {
+  int max_faulty_peers;
+  AplConfig aplConfig;
+} BleConfig;
+
+Ble *ble_init(BleConfig config);
 
 void ble_set_on_trust_callback(Ble *ble, void (*cb)(void *, ByzTrust *),
                                void *ctx);
