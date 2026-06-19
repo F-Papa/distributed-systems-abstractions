@@ -1,5 +1,6 @@
 #include "link/perfect_link.h"
 #include "constants.h"
+#include "link/common.h"
 #include "link/stubborn_link.h"
 #include "utils/list.h"
 #include "utils/logging.h"
@@ -13,7 +14,7 @@
 struct PerfectLink {
   struct StubbornLink *stubborn_link;
   int n_inbox;
-  void (*cb)(void *, PlDeliver *);
+  void (*cb)(void *, Deliver *);
   void *ctx;
   list_t *inbox;
 };
@@ -26,7 +27,7 @@ unsigned long djb2(const char *str) {
   return hash;
 }
 
-static void wrapper(void *ctx, SblDeliver *e) {
+static void wrapper(void *ctx, Deliver *e) {
   struct PerfectLink *pl = ctx;
 
   char id[UUID_STR_LEN];
@@ -52,7 +53,7 @@ static void wrapper(void *ctx, SblDeliver *e) {
   }
 
   list_add(pl->inbox, hash);
-  PlDeliver pl_event = {.sender = e->sender};
+  Deliver pl_event = {.sender = e->sender};
   strcpy(pl_event.msg, e->msg);
   debug("Calling PL Callback\n");
   pl->cb(pl->ctx, &pl_event);
@@ -84,12 +85,12 @@ struct PerfectLink *pl_init(int id, int base_port, int retransmission_period) {
   return pl;
 }
 
-int pl_send(struct PerfectLink *pl, PlSend *e) {
+int pl_send(struct PerfectLink *pl, Send *e) {
   uuid_t uuid;
   uuid_generate_random(uuid);
   char id[UUID_STR_LEN];
   uuid_unparse(uuid, id);
-  SblSend msg_with_id = {.recipient = e->recipient};
+  Send msg_with_id = {.recipient = e->recipient};
   snprintf(msg_with_id.msg, MAX_MSG_LEN, "%s,%s", id, e->msg);
   return sbl_send(pl->stubborn_link, &msg_with_id);
 }
@@ -98,7 +99,7 @@ void pl_consume(struct PerfectLink *pl, struct timeval *timeout) {
   return sbl_consume(pl->stubborn_link, timeout);
 }
 
-void pl_set_callback(struct PerfectLink *pl, void (*cb)(void *, PlDeliver *),
+void pl_set_callback(struct PerfectLink *pl, void (*cb)(void *, Deliver *),
                      void *ctx) {
   pl->cb = cb;
   pl->ctx = ctx;

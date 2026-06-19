@@ -1,22 +1,13 @@
 #ifndef AUTH_PERFECT_LINK_H
 #define AUTH_PERFECT_LINK_H
 
-#include "link/perfect_link.h"
+#include "link/common.h"
+#include "orchestration/handler.h"
 #include "orchestration/task.h"
 #include "watch_set.h"
 #include <sodium.h>
 
 #define SIG_HEX_LEN (crypto_sign_BYTES * 2 + 1)
-
-typedef struct {
-  int recipient;
-  char msg[MAX_MSG_LEN];
-} AuthPlSend;
-
-typedef struct {
-  int sender;
-  char msg[MAX_MSG_LEN];
-} AuthPlDeliver;
 
 typedef struct AuthPerfectLink Apl;
 
@@ -26,12 +17,12 @@ apl_init(int id, int base_port, int retransmission_period,
          int max_rank,
          const unsigned char public_keys[][crypto_sign_PUBLICKEYBYTES]);
 
-int apl_send(struct AuthPerfectLink *apl, AuthPlSend *e);
+int apl_send(struct AuthPerfectLink *apl, Send *e);
 
 void apl_consume(struct AuthPerfectLink *apl, struct timeval *timeout);
 
 void apl_set_callback(struct AuthPerfectLink *apl,
-                      void (*cb)(void *, AuthPlDeliver *e), void *ctx);
+                      void (*cb)(void *, Deliver *e), void *ctx);
 
 void apl_free(struct AuthPerfectLink *apl);
 

@@ -2,14 +2,12 @@
 #define LOGGED_PERFECT_LINK_H
 
 #include "constants.h"
-#include "link/stubborn_link.h"
+#include "link/common.h"
+#include "orchestration/handler.h"
 #include "orchestration/task.h"
 #include "utils/list.h"
-
-typedef struct {
-  int recipient;
-  char msg[MAX_MSG_LEN];
-} LplSend;
+#include "watch_set.h"
+#include <sodium.h>
 
 typedef struct {
   int sender;
@@ -24,7 +22,7 @@ struct LoggedPerfectLink *lpl_init(int id, int base_port,
 
 void get_deliveries(LplDeliver **deliveries, size_t *len);
 
-int lpl_send(struct LoggedPerfectLink *lpl, LplSend *e);
+int lpl_send(struct LoggedPerfectLink *lpl, Send *e);
 
 void lpl_consume(struct LoggedPerfectLink *lpl, struct timeval *timeout);
 

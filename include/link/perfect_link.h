@@ -1,29 +1,20 @@
 #ifndef PERFECT_LINK_H
 #define PERFECT_LINK_H
 
-#include "constants.h"
-#include "link/stubborn_link.h"
+#include "link/common.h"
+#include "orchestration/handler.h"
 #include "orchestration/task.h"
-
-typedef struct {
-  int recipient;
-  char msg[MAX_MSG_LEN];
-} PlSend;
-
-typedef struct {
-  int sender;
-  char msg[MAX_MSG_LEN];
-} PlDeliver;
+#include "watch_set.h"
 
 struct PerfectLink;
 
 struct PerfectLink *pl_init(int id, int base_port, int retransmission_period);
 
-int pl_send(struct PerfectLink *pl, PlSend *e);
+int pl_send(struct PerfectLink *pl, Send *e);
 
 void pl_consume(struct PerfectLink *pl, struct timeval *timeout);
 
-void pl_set_callback(struct PerfectLink *pl, void (*cb)(void *, PlDeliver *e),
+void pl_set_callback(struct PerfectLink *pl, void (*cb)(void *, Deliver *e),
                      void *ctx);
 
 void pl_free(struct PerfectLink *pl);

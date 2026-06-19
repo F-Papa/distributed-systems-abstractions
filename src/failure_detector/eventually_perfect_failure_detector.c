@@ -1,5 +1,6 @@
 #include "failure_detector/eventually_perfect_failure_detector.h"
 #include "constants.h"
+#include "link/common.h"
 #include "link/perfect_link.h"
 #include "orchestration/handler.h"
 #include "utils/list.h"
@@ -31,16 +32,16 @@ struct EventuallyPerfectFailureDetector {
 };
 
 static int send_im_alive(struct PerfectLink *pl, int recipient) {
-  PlSend im_alive = {.msg = "IA", .recipient = recipient};
+  Send im_alive = {.msg = "IA", .recipient = recipient};
   return pl_send(pl, &im_alive);
 }
 
 static int send_heartbeat(struct PerfectLink *pl, int recipient) {
-  PlSend im_alive = {.msg = "HB", .recipient = recipient};
+  Send im_alive = {.msg = "HB", .recipient = recipient};
   return pl_send(pl, &im_alive);
 }
 
-static void pfd_callback(void *ctx, PlDeliver *e) {
+static void pfd_callback(void *ctx, Deliver *e) {
   Epfd *pfd = ctx;
   char msg[MAX_MSG_LEN];
   int *sender = calloc(1, sizeof(int));

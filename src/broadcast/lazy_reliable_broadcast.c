@@ -1,6 +1,7 @@
 #include "broadcast/reliable_broadcast.h"
 #include "constants.h"
 #include "failure_detector/perfect_failure_detector.h"
+#include "link/common.h"
 #include "link/perfect_link.h"
 #include "orchestration/handler.h"
 #include "orchestration/orchestrator.h"
@@ -89,7 +90,7 @@ static int rb_broadcast_aux(Rb *rb, char *content, char *original_id,
     original_id = my_id;
   }
 
-  PlSend msg;
+  Send msg;
   snprintf(msg.msg, MAX_MSG_LEN, "BC,%d,%s,%s", original_sender, original_id,
            content);
 
@@ -153,11 +154,11 @@ static void save_message_to_history(Rb *rb, const char **fields) {
   list_add(history_from_peer, msg_to_save);
 }
 
-void on_delivery_wrapper(void *ctx, PlDeliver *e) {
+void on_delivery_wrapper(void *ctx, Deliver *e) {
   Rb *rb = ctx;
   char buf[MAX_MSG_LEN];
 
-  debug("PlDeliver from %d: %s\n", e->sender, e->msg);
+  debug("Deliver from %d: %s\n", e->sender, e->msg);
 
   if (try_parse_message(e->msg, "BC", buf, MAX_MSG_LEN) != 0) {
     printf("UNKNOW MESSAGE FROM %d: %s\n", e->sender, e->msg);

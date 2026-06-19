@@ -1,5 +1,6 @@
 #include "failure_detector/perfect_failure_detector.h"
 #include "constants.h"
+#include "link/common.h"
 #include "link/perfect_link.h"
 #include "utils/list.h"
 #include "utils/logging.h"
@@ -24,12 +25,12 @@ struct PerfectFailureDetector {
 };
 
 static int send_im_alive(struct PerfectLink *pl, int recipient) {
-  PlSend im_alive = {.msg = "IA", .recipient = recipient};
+  Send im_alive = {.msg = "IA", .recipient = recipient};
   return pl_send(pl, &im_alive);
 }
 
 static int send_heartbeat(struct PerfectLink *pl, int recipient) {
-  PlSend heartbeat = {.msg = "HB", .recipient = recipient};
+  Send heartbeat = {.msg = "HB", .recipient = recipient};
   return pl_send(pl, &heartbeat);
 }
 
@@ -75,7 +76,7 @@ void pfd_handle_timeout(Pfd *pfd) {
   }
 }
 
-static void pfd_callback(void *ctx, PlDeliver *e) {
+static void pfd_callback(void *ctx, Deliver *e) {
   struct PerfectFailureDetector *pfd = ctx;
   char msg[MAX_MSG_LEN];
   int *sender = calloc(1, sizeof(int));

@@ -1,4 +1,5 @@
 #include "leader_election/byzantine_leader_election.h"
+#include "link/common.h"
 #include "link/auth_perfect_link.h"
 #include "utils/list.h"
 #include <bits/types/struct_timeval.h>
@@ -25,7 +26,7 @@ void ble_complain(Ble *ble) {
   for (int i = 1; i <= ble->max_rank; i++) {
     if (i == ble->local_rank)
       continue;
-    AuthPlSend r = {.recipient = i};
+    Send r = {.recipient = i};
     snprintf(r.msg, MAX_MSG_LEN, "CO,%d", ble->round);
     apl_send(ble->auth_perfect_link, &r);
   }
@@ -39,7 +40,7 @@ void ble_set_on_trust_callback(Ble *ble, void (*cb)(void *, ByzTrust *),
   ble->ctx = ctx;
 }
 
-static void ble_callback(void *ctx, AuthPlDeliver *deliver) {
+static void ble_callback(void *ctx, Deliver *deliver) {
   Ble *ble = ctx;
   char body[MAX_MSG_LEN];
   if (try_parse_message(deliver->msg, "CO", body, MAX_MSG_LEN) == 0) {

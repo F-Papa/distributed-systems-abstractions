@@ -1,4 +1,5 @@
 #include "broadcast/best_effort_broadcast.h"
+#include "link/common.h"
 #include "link/perfect_link.h"
 #include "utils/logging.h"
 #include <stdlib.h>
@@ -12,7 +13,7 @@ struct BestEffortBroadcast {
   struct PerfectLink *perfect_link;
 };
 
-static void wrapper(void *ctx, PlDeliver *e) {
+static void wrapper(void *ctx, Deliver *e) {
   debug("Calling BEB Callback\n");
   BebDelivery delivery = {.sender = e->sender};
   strncpy(delivery.msg, e->msg, MAX_MSG_LEN);
@@ -43,7 +44,7 @@ Beb *beb_init(int local_rank, int max_rank, int base_port,
 }
 
 int beb_broadcast(Beb *beb, BebSend *e) {
-  PlSend msg;
+  Send msg;
   strncpy(msg.msg, e->msg, MAX_MSG_LEN);
 
   for (size_t peer_rank = 1; peer_rank <= beb->max_rank; peer_rank++) {

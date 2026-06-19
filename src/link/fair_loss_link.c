@@ -1,5 +1,6 @@
 #include "link/fair_loss_link.h"
 #include "constants.h"
+#include "link/common.h"
 #include "orchestration/handler.h"
 #include "utils/list.h"
 #include "utils/logging.h"
@@ -18,7 +19,7 @@ struct FairLossLink {
   int base_port;
   int socket;
   fd_set reads;
-  void (*callback)(void *, FllDeliver *);
+  void (*callback)(void *, Deliver *);
   void *ctx;
 };
 
@@ -101,7 +102,7 @@ struct addrinfo *get_peer_addr(const struct FairLossLink *fll,
   return resp;
 }
 
-int fll_send(struct FairLossLink *fll, FllSend *e) {
+int fll_send(struct FairLossLink *fll, Send *e) {
   struct addrinfo *target_addr = get_peer_addr(fll, e->recipient);
 
   char buf[MAX_MSG_LEN];
@@ -121,7 +122,7 @@ int fll_send(struct FairLossLink *fll, FllSend *e) {
 }
 
 void fll_set_callback(struct FairLossLink *fll,
-                      void (*cb)(void *ctx, FllDeliver *e), void *ctx) {
+                      void (*cb)(void *ctx, Deliver *e), void *ctx) {
   fll->callback = cb;
   fll->ctx = ctx;
 }
@@ -140,7 +141,7 @@ static void consume_msg(struct FairLossLink *fll) {
   int id_len = strcspn(buf, ",");
   strncpy(id, buf, id_len);
 
-  FllDeliver *e = calloc(1, sizeof(FllDeliver));
+  Deliver *e = calloc(1, sizeof(Deliver));
   strcpy(e->msg, buf + id_len + DELIM_LEN);
   e->sender = atoi(id);
   debug("=====> Calling FLL Callback\n");

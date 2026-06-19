@@ -1,5 +1,6 @@
 #include "link/auth_perfect_link.h"
 #include "constants.h"
+#include "link/common.h"
 #include "link/perfect_link.h"
 #include "orchestration/handler.h"
 #include "utils/logging.h"
@@ -11,11 +12,11 @@ struct AuthPerfectLink {
   unsigned char private_key[crypto_sign_SECRETKEYBYTES];
   unsigned char (*public_keys)[crypto_sign_PUBLICKEYBYTES];
   int max_rank;
-  void (*cb)(void *, AuthPlDeliver *);
+  void (*cb)(void *, Deliver *);
   void *ctx;
 };
 
-static void wrapper(void *ctx, PlDeliver *e) {
+static void wrapper(void *ctx, Deliver *e) {
   struct AuthPerfectLink *apl = ctx;
 
   int sig_hex_len = strcspn(e->msg, ",");
@@ -48,7 +49,7 @@ static void wrapper(void *ctx, PlDeliver *e) {
   size_t msg_len = strlen(e->msg) - offset + 1;
   memmove(e->msg, e->msg + offset, msg_len);
 
-  AuthPlDeliver apl_event = {.sender = e->sender};
+  Deliver apl_event = {.sender = e->sender};
   strcpy(apl_event.msg, e->msg);
 
   apl->cb(apl->ctx, &apl_event);
@@ -92,7 +93,7 @@ apl_init(int id, int base_port, int retransmission_period,
   return apl;
 }
 
-int apl_send(struct AuthPerfectLink *apl, AuthPlSend *e) {
+int apl_send(struct AuthPerfectLink *apl, Send *e) {
   unsigned char sig[crypto_sign_BYTES];
   unsigned long long sig_len = 0;
   crypto_sign_detached(sig, &sig_len, (unsigned char *)e->msg,
@@ -105,7 +106,7 @@ int apl_send(struct AuthPerfectLink *apl, AuthPlSend *e) {
   snprintf(buf, sizeof(buf), "%s,%s", sig_hex, e->msg);
   strcpy(e->msg, buf);
 
-  PlSend pl_s = {.recipient = e->recipient};
+  Send pl_s = {.recipient = e->recipient};
   strcpy(pl_s.msg, e->msg);
 
   return pl_send(apl->perfect_link, &pl_s);
@@ -116,7 +117,7 @@ void apl_consume(struct AuthPerfectLink *apl, struct timeval *timeout) {
 }
 
 void apl_set_callback(struct AuthPerfectLink *apl,
-                      void (*cb)(void *, AuthPlDeliver *), void *ctx) {
+                      void (*cb)(void *, Deliver *), void *ctx) {
   apl->cb = cb;
   apl->ctx = ctx;
 }

@@ -1,4 +1,5 @@
 #include "link/stubborn_link.h"
+#include "link/common.h"
 #include "link/fair_loss_link.h"
 #include "orchestration/orchestrator.h"
 #include "utils/list.h"
@@ -9,13 +10,13 @@
 struct StubbornLink {
   int retransmission_period;
   struct FairLossLink *fair_loss_link;
-  void (*cb)(void *, SblDeliver *);
+  void (*cb)(void *, Deliver *);
   void *ctx;
   list_t *outbox;
   struct timeval next_to;
 };
 
-static void wrapper(void *ctx, FllDeliver *e) {
+static void wrapper(void *ctx, Deliver *e) {
   struct StubbornLink *sbl = ctx;
   debug("Calling SBL Callback\n");
   sbl->cb(sbl->ctx, e);
@@ -49,8 +50,8 @@ struct StubbornLink *sbl_init(int id, int base_port,
   return sbl;
 }
 
-int sbl_send(struct StubbornLink *sbl, SblSend *e) {
-  SblSend *copy = calloc(1, sizeof(SblSend));
+int sbl_send(struct StubbornLink *sbl, Send *e) {
+  Send *copy = calloc(1, sizeof(Send));
   *copy = *e;
   list_add(sbl->outbox, copy);
   return fll_send(sbl->fair_loss_link, e);
@@ -59,7 +60,7 @@ int sbl_send(struct StubbornLink *sbl, SblSend *e) {
 void sbl_handle_timeout(struct StubbornLink *sbl) {
   debug("SBL Retransmisison Began\n");
   for (size_t i = 0; i < sbl->outbox->count; i++) {
-    SblSend *msg = list_get(sbl->outbox, i);
+    Send *msg = list_get(sbl->outbox, i);
     debug("Msg %d/%d: %s\n", i + 1, sbl->outbox->count, msg->msg);
     fll_send(sbl->fair_loss_link, msg);
   }
@@ -81,8 +82,8 @@ void sbl_consume(struct StubbornLink *sbl, struct timeval *timeout) {
   orchestrator_start(orch, timeout);
 }
 
-void sbl_set_callback(struct StubbornLink *sbl,
-                      void (*cb)(void *, SblDeliver *), void *ctx) {
+void sbl_set_callback(struct StubbornLink *sbl, void (*cb)(void *, Deliver *),
+                      void *ctx) {
   sbl->cb = cb;
   sbl->ctx = ctx;
 }

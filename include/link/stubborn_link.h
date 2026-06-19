@@ -1,23 +1,22 @@
 #ifndef STUBBORN_LINK_H
 #define STUBBORN_LINK_H
 
-#include "link/fair_loss_link.h"
+#include "link/common.h"
+#include "orchestration/handler.h"
 #include "orchestration/task.h"
+#include "watch_set.h"
 #include <sys/time.h>
-
-typedef FllSend SblSend;
-typedef FllDeliver SblDeliver;
 
 struct StubbornLink;
 
 struct StubbornLink *sbl_init(int id, int base_port, int retransmission_period);
 
-int sbl_send(struct StubbornLink *sbl, SblSend *e);
+int sbl_send(struct StubbornLink *sbl, Send *e);
 
 void sbl_consume(struct StubbornLink *sbl, struct timeval *timeout);
 
-void sbl_set_callback(struct StubbornLink *sbl,
-                      void (*cb)(void *, SblDeliver *), void *ctx);
+void sbl_set_callback(struct StubbornLink *sbl, void (*cb)(void *, Deliver *),
+                      void *ctx);
 
 void sbl_free(struct StubbornLink *sbl);
 

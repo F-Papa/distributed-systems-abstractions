@@ -18,7 +18,7 @@ struct LoggedPerfectLink {
   list_t *deliveries;
 };
 
-static void wrapper(void *ctx, SblDeliver *e) {
+static void wrapper(void *ctx, Deliver *e) {
   char id[UUID_STR_LEN];
   int id_len = strcspn(e->msg, ",");
   strncpy(id, e->msg, id_len);
@@ -75,7 +75,7 @@ struct LoggedPerfectLink *lpl_init(int id, int base_port,
   return lpl;
 }
 
-int lpl_send(struct LoggedPerfectLink *lpl, LplSend *e) {
+int lpl_send(struct LoggedPerfectLink *lpl, Send *e) {
   uuid_t uuid;
   uuid_generate_random(uuid);
   char id[UUID_STR_LEN];
@@ -84,7 +84,7 @@ int lpl_send(struct LoggedPerfectLink *lpl, LplSend *e) {
   snprintf(buf, MAX_MSG_LEN, "%s,%s", id, e->msg);
   strcpy(e->msg, buf);
 
-  SblSend s = {.recipient = e->recipient};
+  Send s = {.recipient = e->recipient};
   strcpy(s.msg, e->msg);
   return sbl_send(lpl->stubborn_link, &s);
 }

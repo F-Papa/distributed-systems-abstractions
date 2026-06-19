@@ -1,5 +1,6 @@
 #include "leader_election/eventual_leader_election.h"
 #include "constants.h"
+#include "link/common.h"
 #include "link/fair_loss_link.h"
 #include "utils/list.h"
 #include "utils/logging.h"
@@ -32,7 +33,7 @@ struct EventualLeaderElector {
   int period_duration_secs;
 };
 
-static void wrapper(void *ctx, FllDeliver *e) {
+static void wrapper(void *ctx, Deliver *e) {
   Ele *ele = ctx;
   char msg[MAX_MSG_LEN];
   int *sender = calloc(1, sizeof(int));
@@ -64,7 +65,7 @@ static void wrapper(void *ctx, FllDeliver *e) {
 }
 
 static int send_heartbeat(struct FairLossLink *fll, int peer_rank, int epoch) {
-  FllSend heartbeat = {.recipient = peer_rank};
+  Send heartbeat = {.recipient = peer_rank};
   snprintf(heartbeat.msg, MAX_MSG_LEN, "HE,%d", epoch);
 
   return fll_send(fll, &heartbeat);
