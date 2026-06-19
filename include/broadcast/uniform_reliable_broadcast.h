@@ -1,7 +1,8 @@
 #ifndef UNIFORM_RELIABLE_BROADCAST_H
 #define UNIFORM_RELIABLE_BROADCAST_H
 
-#include "broadcast/reliable_broadcast.h"
+#include "broadcast/common.h"
+#include "link/common.h"
 #include "orchestration/handler.h"
 #include "orchestration/task.h"
 #include "watch_set.h"
@@ -19,9 +20,9 @@ typedef struct UrbConfig {
 
 Urb *urb_init(UrbConfig config);
 
-int urb_broadcast(Urb *urb, RbSend *e);
+int urb_broadcast(Urb *urb, Broadcast *e);
 
-void urb_set_callback(Urb *urb, void (*cb)(void *, RbDelivery *), void *ctx);
+void urb_set_callback(Urb *urb, void (*cb)(void *, Deliver *), void *ctx);
 
 void urb_free(Urb *urb);
 

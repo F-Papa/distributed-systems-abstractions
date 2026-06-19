@@ -1,7 +1,8 @@
 #include "broadcast/best_effort_broadcast.h"
-#include "broadcast/reliable_broadcast.h"
+#include "broadcast/common.h"
 #include "broadcast/uniform_reliable_broadcast.h"
 #include "constants.h"
+#include "link/common.h"
 #include "utils/list.h"
 #include "utils/logging.h"
 #include "utils/parsing.h"
@@ -15,7 +16,7 @@ struct UniformReliableBroadcast {
   UrbConfig config;
   Beb *best_effort_broadcast;
   list_t *received;
-  void (*callback)(void *, RbDelivery *);
+  void (*callback)(void *, Deliver *);
   void *context;
 };
 
@@ -33,7 +34,7 @@ enum Fields {
 
 static int broadcast_aux(Urb *urb, char *content, char *original_id,
                          int original_sender) {
-  BebSend to_send = {};
+  Broadcast to_send = {};
   char id_buf[UUID_STR_LEN];
   if (original_id == NULL) {
     uuid_t uuid;
@@ -47,8 +48,8 @@ static int broadcast_aux(Urb *urb, char *content, char *original_id,
   return beb_broadcast(urb->best_effort_broadcast, &to_send);
 }
 
-static RbDelivery create_rb_delivery(const char **fields) {
-  RbDelivery delivery;
+static Deliver create_rb_delivery(const char **fields) {
+  Deliver delivery;
   int original_sender = atoi(fields[ORIGINAL_SENDER]);
   strncpy(delivery.msg, fields[BODY], MAX_MSG_LEN);
   delivery.sender = original_sender;
@@ -89,7 +90,7 @@ static struct SavedMessage *save_message(Urb *urb, const char **fields) {
   return msg;
 }
 
-static void urb_callback(void *ctx, BebDelivery *e) {
+static void urb_callback(void *ctx, Deliver *e) {
   debug("Calling URB callback\n");
   Urb *urb = ctx;
   char buf[MAX_MSG_LEN];
@@ -118,7 +119,7 @@ static void urb_callback(void *ctx, BebDelivery *e) {
   struct SavedMessage *prev_saved_msg =
       get_saved_message(urb, fields[ORIGINAL_ID]);
 
-  RbDelivery delivery = create_rb_delivery((const char **)fields);
+  Deliver delivery = create_rb_delivery((const char **)fields);
   if (prev_saved_msg == NULL) {
     prev_saved_msg = save_message(urb, (const char **)fields);
     if (original_sender != urb->config.local_rank) {
@@ -167,11 +168,11 @@ Urb *urb_init(UrbConfig config) {
   return urb;
 }
 
-int urb_broadcast(Urb *urb, RbSend *e) {
+int urb_broadcast(Urb *urb, Broadcast *e) {
   return broadcast_aux(urb, e->msg, NULL, urb->config.local_rank);
 }
 
-void urb_set_callback(Urb *urb, void (*cb)(void *, RbDelivery *), void *ctx) {
+void urb_set_callback(Urb *urb, void (*cb)(void *, Deliver *), void *ctx) {
   urb->callback = cb;
   urb->context = ctx;
 }

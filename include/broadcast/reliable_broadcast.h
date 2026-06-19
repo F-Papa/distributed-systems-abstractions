@@ -1,21 +1,13 @@
 #ifndef RELIABLE_BROADCAST_H
 #define RELIABLE_BROADCAST_H
 
-#include "constants.h"
+#include "broadcast/common.h"
+#include "link/common.h"
 #include "orchestration/handler.h"
 #include "orchestration/task.h"
 #include "watch_set.h"
 #include <bits/types/struct_timeval.h>
 #include <sys/select.h>
-
-typedef struct reliable_broadcast_send {
-  char msg[MAX_MSG_LEN];
-} RbSend;
-
-typedef struct reliable_broadcast_delivery {
-  int sender;
-  char msg[MAX_MSG_LEN];
-} RbDelivery;
 
 typedef struct ReliableBroadcast Rb;
 
@@ -30,9 +22,9 @@ typedef struct reliable_broadcast_config {
 
 Rb *rb_init(RbConfig config);
 
-int rb_broadcast(Rb *rb, RbSend *e);
+int rb_broadcast(Rb *rb, Broadcast *e);
 
-void rb_set_callback(Rb *rb, void (*cb)(void *, RbDelivery *), void *ctx);
+void rb_set_callback(Rb *rb, void (*cb)(void *, Deliver *), void *ctx);
 
 void rb_free(Rb *rb);
 

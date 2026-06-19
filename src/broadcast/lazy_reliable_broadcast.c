@@ -1,3 +1,4 @@
+#include "broadcast/common.h"
 #include "broadcast/reliable_broadcast.h"
 #include "constants.h"
 #include "failure_detector/perfect_failure_detector.h"
@@ -20,7 +21,7 @@ struct ReliableBroadcast {
   RbConfig config;
   struct PerfectLink *perfect_link;
   Pfd *perfect_failure_detector;
-  void (*cb)(void *, RbDelivery *);
+  void (*cb)(void *, Deliver *);
   void *ctx;
   struct timeval control_deadline;
   struct timeval data_deadline;
@@ -118,9 +119,9 @@ void on_crashed(void *ctx, Crash *e) {
          e->peer_id);
 }
 
-static RbDelivery create_rb_delivery(const char **fields) {
+static Deliver create_rb_delivery(const char **fields) {
   int original_sender = atoi(fields[ORIGINAL_SENDER]);
-  RbDelivery delivery;
+  Deliver delivery;
   strncpy(delivery.msg, fields[BODY], MAX_MSG_LEN);
   delivery.sender = original_sender;
   return delivery;
@@ -176,7 +177,7 @@ void on_delivery_wrapper(void *ctx, Deliver *e) {
     return;
   }
 
-  RbDelivery delivery = create_rb_delivery((const char **)fields);
+  Deliver delivery = create_rb_delivery((const char **)fields);
 
   if (original_sender == rb->config.local_rank) {
     if (e->sender == rb->config.local_rank) {
@@ -197,7 +198,7 @@ void on_delivery_wrapper(void *ctx, Deliver *e) {
     free(fields[i]);
 }
 
-int rb_broadcast(Rb *rb, RbSend *e) {
+int rb_broadcast(Rb *rb, Broadcast *e) {
   return rb_broadcast_aux(rb, e->msg, NULL, rb->config.local_rank);
 }
 
@@ -267,7 +268,7 @@ Rb *rb_init(RbConfig config) {
   return rb;
 }
 
-void rb_set_callback(Rb *rb, void (*cb)(void *, RbDelivery *), void *ctx) {
+void rb_set_callback(Rb *rb, void (*cb)(void *, Deliver *), void *ctx) {
   rb->cb = cb;
   rb->ctx = ctx;
 }
