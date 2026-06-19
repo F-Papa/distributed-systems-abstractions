@@ -31,6 +31,12 @@ struct SavedMessage {
   char msg[MAX_MSG_LEN];
 };
 
+enum Fields {
+  ORIGINAL_SENDER = 0,
+  ORIGINAL_ID,
+  BODY,
+};
+
 static void reset_control_deadline(Rb *rb) {
   struct timeval to = {0, 0};
   to.tv_sec = rb->config.control_retransmission_period;
@@ -111,70 +117,83 @@ void on_crashed(void *ctx, Crash *e) {
          e->peer_id);
 }
 
+static RbDelivery create_rb_delivery(const char **fields) {
+  int original_sender = atoi(fields[ORIGINAL_SENDER]);
+  RbDelivery delivery;
+  strncpy(delivery.msg, fields[BODY], MAX_MSG_LEN);
+  delivery.sender = original_sender;
+  return delivery;
+}
+
+static int is_message_duplicate(const Rb *rb, const char **fields) {
+  int original_sender = atoi(fields[ORIGINAL_SENDER]);
+  list_t *history_from_peer = rb->history[original_sender - 1];
+
+  for (int i = 0; i < history_from_peer->count; i++) {
+    struct SavedMessage *saved_msg = list_get(history_from_peer, i);
+    debug("\tog_id: %s | saved_id: %s\n", fields[ORIGINAL_ID], saved_msg->id);
+
+    if (strcmp(saved_msg->id, fields[ORIGINAL_ID]) == 0) {
+      return 1;
+    }
+  }
+  return 0;
+}
+
+static void save_message_to_history(Rb *rb, const char **fields) {
+  struct SavedMessage *msg_to_save = calloc(1, sizeof(struct SavedMessage));
+  if (msg_to_save == NULL) {
+    return;
+  }
+  strncpy(msg_to_save->msg, fields[BODY], MAX_MSG_LEN);
+  strncpy(msg_to_save->id, fields[ORIGINAL_ID], UUID_STR_LEN);
+
+  int original_sender = atoi(fields[ORIGINAL_SENDER]);
+  list_t *history_from_peer = rb->history[original_sender - 1];
+  list_add(history_from_peer, msg_to_save);
+}
+
 void on_delivery_wrapper(void *ctx, PlDeliver *e) {
   Rb *rb = ctx;
   char buf[MAX_MSG_LEN];
 
   debug("PlDeliver from %d: %s\n", e->sender, e->msg);
 
-  enum Fields {
-    ORIGINAL_SENDER = 0,
-    ORIGINAL_ID,
-    BODY,
-  };
+  if (try_parse_message(e->msg, "BC", buf, MAX_MSG_LEN) != 0) {
+    printf("UNKNOW MESSAGE FROM %d: %s\n", e->sender, e->msg);
+    return;
+  }
 
-  if (try_parse_message(e->msg, "BC", buf, MAX_MSG_LEN) == 0) {
-    RbDelivery delivery;
+  char *fields[3];
+  if (parse_message(buf, fields, 3) != 0)
+    return;
 
-    char *fields[3];
-    if (parse_message(buf, fields, 3) != 0)
-      return;
-
-    int original_sender = atoi(fields[ORIGINAL_SENDER]);
-    if (original_sender < 1 || original_sender > rb->config.max_rank) {
-      for (int i = 0; i < 3; i++)
-        free(fields[i]);
-      return;
-    }
-
-    strncpy(delivery.msg, fields[BODY], MAX_MSG_LEN);
-    delivery.sender = original_sender;
-
-    if (original_sender == rb->config.local_rank) {
-      if (e->sender == rb->config.local_rank) {
-        rb->cb(rb->ctx, &delivery);
-      }
-      for (int i = 0; i < 3; i++)
-        free(fields[i]);
-      return;
-    }
-
-    list_t *history_from_peer = rb->history[original_sender - 1];
-    debug("Checking history from og_sender (%d):\n", original_sender);
-    for (int i = 0; i < history_from_peer->count; i++) {
-      struct SavedMessage *saved_msg = list_get(history_from_peer, i);
-      debug("\tog_id: %s | saved_id: %s\n", fields[ORIGINAL_ID], saved_msg->id);
-      if (strcmp(saved_msg->id, fields[ORIGINAL_ID]) == 0) {
-        printf("Dup message: %s\n", e->msg);
-        return;
-      }
-    }
-
-    struct SavedMessage *msg_to_save = calloc(1, sizeof(struct SavedMessage));
-    if (msg_to_save == NULL) {
-      return;
-    }
-    strncpy(msg_to_save->msg, delivery.msg, MAX_MSG_LEN);
-    strncpy(msg_to_save->id, fields[ORIGINAL_ID], UUID_STR_LEN);
-    list_add(history_from_peer, msg_to_save);
-
+  int original_sender = atoi(fields[ORIGINAL_SENDER]);
+  if (original_sender < 1 || original_sender > rb->config.max_rank) {
     for (int i = 0; i < 3; i++)
       free(fields[i]);
-
-    rb->cb(rb->ctx, &delivery);
-  } else {
-    printf("UNKNOW MESSAGE FROM %d: %s\n", e->sender, e->msg);
+    return;
   }
+
+  RbDelivery delivery = create_rb_delivery((const char **)fields);
+
+  if (original_sender == rb->config.local_rank) {
+    if (e->sender == rb->config.local_rank) {
+      rb->cb(rb->ctx, &delivery);
+    }
+    for (int i = 0; i < 3; i++)
+      free(fields[i]);
+    return;
+  }
+
+  debug("Checking history from og_sender (%d):\n", original_sender);
+  if (!is_message_duplicate(rb, (const char **)fields)) {
+    save_message_to_history(rb, (const char **)fields);
+    rb->cb(rb->ctx, &delivery);
+  }
+
+  for (int i = 0; i < 3; i++)
+    free(fields[i]);
 }
 
 int rb_broadcast(Rb *rb, RbSend *e) {
