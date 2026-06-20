@@ -15,8 +15,8 @@ typedef struct AplConfig {
   int max_rank;
   int base_port;
   int retransmission_period;
-  const unsigned char private_key[crypto_sign_SECRETKEYBYTES];
-  const unsigned char public_keys[][crypto_sign_PUBLICKEYBYTES];
+  const unsigned char *private_key;
+  const unsigned char (*public_keys)[crypto_sign_PUBLICKEYBYTES];
 } AplConfig;
 
 struct AuthPerfectLink *apl_init(AplConfig config);

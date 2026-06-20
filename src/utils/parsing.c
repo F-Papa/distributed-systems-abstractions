@@ -3,8 +3,12 @@
 #include <string.h>
 
 int try_parse_message(char *msg, char *expected_header, char *body, int len) {
-  if (strpbrk(msg, expected_header) != msg) {
-    return -1;
+  int i = 0;
+  while (expected_header != NULL && expected_header[i] != '\0') {
+    if (msg == NULL || msg[i] != expected_header[i]) {
+      return -1;
+    }
+    i++;
   }
   strncpy(body, msg + strlen(expected_header) + DELIM_LEN, len);
   return 0;
